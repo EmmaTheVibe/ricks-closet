@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useTexture } from "@react-three/drei";
 import {
+  BoxGeometry,
   CanvasTexture,
   CatmullRomCurve3,
   MathUtils,
@@ -20,7 +21,8 @@ import {
 import Shirt from "./Shirt";
 import { ShirtSurface } from "./shirtSurface";
 import { createWeaveTexture } from "./weave";
-import { SHIRTS } from "./shirts";
+import { SHIRTS, type GarmentKind } from "./shirts";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type { RackController } from "./useRackControls";
 import type { ShirtInteraction } from "./interaction";
 import { alphaMask, ClothSim, type HangerPose } from "./cloth/ClothSim";
@@ -111,7 +113,45 @@ function topEdgeY(mask: AlphaMask, x: number) {
  * garment's shoulders do (dropped shoulders, tall collars) so the wire stays inside the fabric.
  * It sits a little behind the cloth so the bar never pokes through the shirt's face.
  */
-function buildHangerBody(mask: AlphaMask) {
+/** Opaque extent (hanger-local x) of the garment's first opaque row: the waistband for pants. */
+function waistSpan(mask: AlphaMask) {
+  for (let py = 0; py < mask.height; py++) {
+    let left = -1;
+    let right = -1;
+    for (let px = 0; px < mask.width; px++) {
+      if (mask.data[py * mask.width + px] < 128) continue;
+      if (left < 0) left = px;
+      right = px;
+    }
+    if (left >= 0) {
+      const toX = (px: number) => ((px + 0.5) / mask.width - 0.5) * SHIRT_WIDTH;
+      return { left: toX(left), right: toX(right), top: -HANGER_DROP - (py / mask.height) * SHIRT_HEIGHT };
+    }
+  }
+  return { left: -0.15, right: 0.15, top: -HANGER_DROP };
+}
+
+/** Clip hanger for pants: a straight bar above the waistband with a clip gripping each end. */
+function buildClipHanger(mask: AlphaMask) {
+  const waist = waistSpan(mask);
+  const barY = waist.top + 0.03;
+  const clipX = [waist.left + 0.03, waist.right - 0.03];
+  const parts = [
+    wire([[0, -0.05, 0], [0, -0.06, 0], [0, barY, 0]], 8),
+    wire([[waist.left - 0.01, barY, 0], [0, barY, 0], [waist.right + 0.01, barY, 0]], 24),
+    ...clipX.flatMap((x) => {
+      const clip = new BoxGeometry(0.024, 0.04, 0.02);
+      clip.translate(x, waist.top - 0.008, 0);
+      return [wire([[x, barY, 0], [x, (barY + waist.top) / 2, 0], [x, waist.top + 0.012, 0]], 4), clip];
+    }),
+  ];
+  const merged = mergeGeometries(parts.map((g) => g.toNonIndexed()))!;
+  parts.forEach((g) => g.dispose());
+  return merged;
+}
+
+function buildHangerBody(mask: AlphaMask, kind: GarmentKind) {
+  if (kind === "pants") return buildClipHanger(mask);
   const z = -0.012;
   // The neck wire meets the arms just below the back of the collar, so only the hook shows.
   const apex = Math.min(-0.08, topEdgeY(mask, 0) - APEX_MARGIN);
@@ -157,7 +197,10 @@ export default function Rack({ controls, interaction }: RackProps) {
   );
 
   const hook = useMemo(() => buildHook(), []);
-  const hangerBodies = useMemo(() => textures.map((t) => buildHangerBody(alphaMask(t))), [textures]);
+  const hangerBodies = useMemo(
+    () => textures.map((t, i) => buildHangerBody(alphaMask(t), SHIRTS[i].kind ?? "shirt")),
+    [textures],
+  );
   useEffect(() => () => hangerBodies.forEach((h) => h.dispose()), [hangerBodies]);
   const metal = useMemo(() => new MeshStandardMaterial({ color: "#c8c8c8", metalness: 1, roughness: 0.3 }), []);
   useEffect(
@@ -263,7 +306,7 @@ export default function Rack({ controls, interaction }: RackProps) {
           .slice(0, MAX_SIMULATED);
     for (const id of sim.ids()) if (!wanted.includes(id)) sim.remove(id);
     for (const i of wanted) {
-      if (!sim.has(i)) sim.add(i, surfaces[i], textures[i], poses.current[i]);
+      if (!sim.has(i)) sim.add(i, surfaces[i], textures[i], poses.current[i], SHIRTS[i].kind ?? "shirt");
     }
   }
 

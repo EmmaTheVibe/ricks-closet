@@ -7,6 +7,7 @@ import {
   PIN_SPAN,
   SHEAR_STIFFNESS,
 } from "../constants";
+import type { GarmentKind } from "../shirts";
 
 /** Downsampled alpha channel of the shirt texture, row 0 at the top. */
 export type AlphaMask = { width: number; height: number; data: Uint8Array };
@@ -17,6 +18,7 @@ export type ClothSpec = {
   width: number;
   height: number;
   top: number; // distance from the hanger origin down to the top grid row
+  kind: GarmentKind;
 };
 
 export type ClothTopology = {
@@ -60,12 +62,22 @@ export function buildConstraints(spec: ClothSpec, mask: AlphaMask): ClothTopolog
     inside[i] = sampleAlpha(mask, u(i), v(i)) >= ALPHA_CUTOFF ? 1 : 0;
   }
 
-  // Pin the middle columns down to the hanger's bottom bar (at least to the first opaque row):
-  // the yoke rests on the hanger. Outer columns (shoulder tips, sleeves) stay free.
   const invMass = new Float32Array(count).fill(1);
+  if (spec.kind === "pants") {
+    // Clip hanger: the whole waistband is held. Each column is pinned down to its first opaque
+    // row, if that row is near the top (columns beside the waist stay free).
+    const waistRows = Math.ceil(rows * 0.15);
+    for (let c = 0; c < cols; c++) {
+      let first = -1;
+      for (let r = 0; r < waistRows && first < 0; r++) if (inside[r * cols + c]) first = r;
+      for (let r = 0; r <= first; r++) invMass[r * cols + c] = 0;
+    }
+  }
+  // Shirts: pin the middle columns down to the hanger's bottom bar (at least to the first opaque
+  // row): the yoke rests on the hanger. Outer columns (shoulder tips, sleeves) stay free.
   const pinFrom = Math.round((cols - 1) * (0.5 - PIN_SPAN / 2));
   const pinTo = Math.round((cols - 1) * (0.5 + PIN_SPAN / 2));
-  for (let c = pinFrom; c <= pinTo; c++) {
+  for (let c = pinFrom; c <= pinTo && spec.kind === "shirt"; c++) {
     for (let r = 0; r < rows; r++) {
       const i = r * cols + c;
       const aboveBar = restLocal[i * 3 + 1] >= -HANGER_BAR_DROP;

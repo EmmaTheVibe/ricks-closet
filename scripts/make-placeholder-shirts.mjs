@@ -74,7 +74,44 @@ function shirtSvg({ base, stitch, stripes, twill, pocket, ringer }) {
 </svg>`;
 }
 
+
 await mkdir(OUT_DIR, { recursive: true });
+
+// Pants hang from a clip hanger by the waistband, so the waistband sits at the top edge. The gap
+// between the legs is transparent, which lets each leg swing on its own in the cloth sim.
+const PANTS = `
+  M 272 24 L 752 24 L 768 300 L 744 1250 L 552 1250
+  L 522 384 L 502 384 L 472 1250 L 280 1250 L 256 300 Z`;
+
+function pantsSvg({ base, stitch }) {
+  const dashed = `fill="none" stroke="${stitch}" stroke-width="4" stroke-dasharray="14 10" stroke-linecap="round"`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+  <defs>
+    <clipPath id="pants"><path d="${PANTS}"/></clipPath>
+    <linearGradient id="shade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#000" stop-opacity="0.16"/>
+    </linearGradient>
+  </defs>
+  <g clip-path="url(#pants)">
+    <rect width="${W}" height="${H}" fill="${base}"/>
+    <rect width="${W}" height="${H}" fill="url(#shade)"/>
+    <rect x="0" y="24" width="${W}" height="62" fill="#000" fill-opacity="0.12"/>
+    <path d="M 256 86 L 768 86" ${dashed}/>
+    ${[318, 430, 594, 706].map((x) => `<rect x="${x - 9}" y="20" width="18" height="74" rx="4" fill="${base}" stroke="#000" stroke-opacity="0.25" stroke-width="3"/>`).join("")}
+    <path d="M 512 86 L 512 330" stroke="#000" stroke-opacity="0.22" stroke-width="3" fill="none"/>
+    <path d="M 538 90 L 538 300 Q 536 336 512 346" ${dashed}/>
+    <path d="M 262 120 Q 330 150 352 300 M 762 120 Q 694 150 672 300" fill="none" stroke="#000" stroke-opacity="0.25" stroke-width="3"/>
+    <path d="M 384 330 L 376 1236 M 640 330 L 648 1236" stroke="#000" stroke-opacity="0.1" stroke-width="5" fill="none"/>
+    <path d="M 282 1214 L 470 1214 M 554 1214 L 742 1214" ${dashed}/>
+    <path d="${PANTS}" fill="none" stroke="#000" stroke-opacity="0.22" stroke-width="10"/>
+  </g>
+</svg>`;
+}
+
+await sharp(Buffer.from(pantsSvg({ base: "#6b6b47", stitch: "#4a4a2c" }))).png().toFile(path.join(OUT_DIR, "pants-01.png"));
+console.log("wrote public/shirts/pants-01.png");
+
 for (const design of DESIGNS) {
   await sharp(Buffer.from(shirtSvg(design))).png().toFile(path.join(OUT_DIR, design.file));
   console.log(`wrote public/shirts/${design.file}`);

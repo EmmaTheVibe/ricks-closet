@@ -2,6 +2,7 @@ import { MathUtils, type Texture } from "three";
 import { HANGER_DROP, RELAX_TIME, SHIRT_HEIGHT, SHIRT_WIDTH } from "../constants";
 import type { AlphaMask, ClothSpec } from "./buildConstraints";
 import type { ShirtSurface } from "../shirtSurface";
+import type { GarmentKind } from "../shirts";
 
 export type HangerPose = { x: number; y: number; z: number; rotY: number };
 
@@ -87,13 +88,13 @@ export class ClothSim {
     return [...this.entries.keys()];
   }
 
-  add(id: number, surface: ShirtSurface, texture: Texture, pose: HangerPose) {
+  add(id: number, surface: ShirtSurface, texture: Texture, pose: HangerPose, kind: GarmentKind) {
     this.relaxing.delete(id);
     const positions = surface.positions.slice();
     const request: WorkerRequest = {
       type: "init",
       id,
-      spec: { ...this.grid, width: SHIRT_WIDTH, height: SHIRT_HEIGHT, top: HANGER_DROP },
+      spec: { ...this.grid, width: SHIRT_WIDTH, height: SHIRT_HEIGHT, top: HANGER_DROP, kind },
       mask: alphaMask(texture),
       pose: { ...pose },
       positions,

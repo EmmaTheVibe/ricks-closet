@@ -41,16 +41,28 @@ function SceneReady({ onReady }: { onReady: () => void }) {
   return null;
 }
 
-/** Pulls the camera back on narrow screens so the center shirt always fits. */
+/**
+ * Pulls the camera back on narrow screens so the center shirt always fits. The camera stays level
+ * and the frame is shifted down instead of tilted (like a shift lens), so hanging garments stay
+ * vertical at the edges of the screen instead of leaning.
+ */
 function CameraRig() {
+  const last = useRef({ z: 0, width: 0, height: 0 });
   useFrame(({ camera, size }) => {
+    const cam = camera as PerspectiveCamera;
+    const tanHalfFov = Math.tan(MathUtils.degToRad(cam.fov) / 2);
     const halfWidth = SHIRT_WIDTH * 0.75;
-    const tanHalfFov = Math.tan(MathUtils.degToRad((camera as PerspectiveCamera).fov) / 2);
     const z = Math.max(CAMERA_POSITION[2], halfWidth / (tanHalfFov * (size.width / size.height)));
-    if (camera.position.z !== z) {
-      camera.position.z = z;
-      camera.lookAt(...CAMERA_TARGET);
-    }
+    const prev = last.current;
+    if (prev.z === z && prev.width === size.width && prev.height === size.height) return;
+    last.current = { z, width: size.width, height: size.height };
+
+    const eyeY = CAMERA_POSITION[1];
+    cam.position.set(0, eyeY, z);
+    cam.lookAt(0, eyeY, 0);
+    // Shift the frame so CAMERA_TARGET lands at the centre, as it did when the camera tilted.
+    const shift = ((eyeY - CAMERA_TARGET[1]) / (z * tanHalfFov)) * (size.height / 2);
+    cam.setViewOffset(size.width, size.height, 0, shift, size.width, size.height);
   });
   return null;
 }
@@ -85,12 +97,11 @@ export default function RackScene() {
           dpr={[1, 2]}
           frameloop={onScreen ? "always" : "never"}
           camera={{ fov: CAMERA_FOV, position: CAMERA_POSITION }}
-          onCreated={({ gl, camera }) => {
+          onCreated={({ gl }) => {
             // Khronos PBR Neutral keeps product colours true (ACES, the default, shifts and washes them).
             gl.toneMapping = NeutralToneMapping;
             gl.domElement.setAttribute("role", "img");
             gl.domElement.setAttribute("aria-label", "Clothes rack");
-            camera.lookAt(...CAMERA_TARGET);
           }}
         >
           <color attach="background" args={[BACKGROUND]} />
