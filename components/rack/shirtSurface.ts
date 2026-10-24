@@ -65,6 +65,8 @@ export class ShirtSurface {
   readonly back: PlaneGeometry;
   readonly rest: Float32Array; // flat mid-sheet pose
   private offsets: Float32Array;
+  private hem: number[]; // fabric vertices in the lower part of the shirt
+  readonly hemShift = { x: 0, z: 0 }; // how far the hem has swung from rest, hanger-local
 
   constructor(cols: number, rows: number, mask: AlphaMask) {
     this.mid = createPanel(cols, rows);
@@ -72,6 +74,8 @@ export class ShirtSurface {
     this.back = createPanel(cols, rows);
     this.rest = Float32Array.from(this.mid.getAttribute("position").array);
     this.offsets = panelOffsets(cols, rows, mask);
+    this.hem = [];
+    for (let i = Math.floor(rows * 0.65) * cols; i < rows * cols; i++) if (this.offsets[i] > 0) this.hem.push(i);
     this.inflate();
   }
 
@@ -102,6 +106,16 @@ export class ShirtSurface {
     }
     frontPos.needsUpdate = true;
     backPos.needsUpdate = true;
+
+    let dx = 0;
+    let dz = 0;
+    for (const i of this.hem) {
+      dx += p[i * 3] - this.rest[i * 3];
+      dz += p[i * 3 + 2] - this.rest[i * 3 + 2];
+    }
+    const count = Math.max(1, this.hem.length);
+    this.hemShift.x = dx / count;
+    this.hemShift.z = dz / count;
     this.front.computeVertexNormals();
     this.back.computeVertexNormals();
   }

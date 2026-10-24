@@ -210,6 +210,7 @@ export default function Rack({ controls, interaction }: RackProps) {
   const slots = useRef<(Group | null)[]>([]);
   const bodies = useRef<(Group | null)[]>([]);
   const meshes = useRef<(Mesh | null)[]>([]);
+  const shadows = useRef<(Mesh | null)[]>([]);
   const poses = useRef<HangerPose[]>(SHIRTS.map(() => ({ x: 0, y: RAIL_Y, z: 0, rotY: 0 })));
 
   // Pointer ray from client coordinates.
@@ -283,6 +284,13 @@ export default function Rack({ controls, interaction }: RackProps) {
       const pose = poses.current[i];
       pose.x = slot.position.x = slotX(d, layout);
       pose.rotY = body.rotation.y = slotRotationY(d);
+
+      // The floor shadow drifts under the hem as the shirt swings or is tugged.
+      const shadow = shadows.current[i];
+      if (shadow) {
+        shadow.position.x = surfaces[i].hemShift.x;
+        shadow.position.z = surfaces[i].hemShift.z;
+      }
     }
 
     const grab = interaction.grab;
@@ -319,6 +327,9 @@ export default function Rack({ controls, interaction }: RackProps) {
           >
             <mesh geometry={hangerBodies[i]} material={metal} castShadow />
             <mesh
+              ref={(el) => {
+                shadows.current[i] = el;
+              }}
               position={[0, -RAIL_Y + 0.002, 0]}
               rotation={[-Math.PI / 2, 0, 0]}
               scale={[...FLOOR_SHADOW_SIZE, 1]}
