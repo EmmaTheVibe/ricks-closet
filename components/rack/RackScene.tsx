@@ -112,7 +112,8 @@ export default function RackScene() {
           />
 
           <Suspense fallback={null}>
-            <Environment preset="studio" environmentIntensity={ENV_INTENSITY} />
+            {/* drei's "studio" preset, self-hosted (the preset loads from a slow third-party CDN). */}
+            <Environment files="/hdri/studio_small_03_1k.hdr" environmentIntensity={ENV_INTENSITY} />
             <Rack controls={controls} interaction={interaction} />
             <Sign />
             <SceneReady onReady={markReady} />

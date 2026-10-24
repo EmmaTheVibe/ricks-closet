@@ -1,7 +1,7 @@
 // Fits a cut-out shirt photo into the rack's 1024×1280 transparent frame: trims the empty border,
 // scales the sleeve span to the frame width, and puts the shoulders at the top edge.
 // Usage: npm run prepare-shirt -- <input.png> <output-name> [--remove-hanger]
-//   (writes public/shirts/<output-name>.png)
+//   (writes public/shirts/<output-name>.webp)
 // --remove-hanger: for photos taken on a wooden hanger. Clears warm-tinted (wood) pixels in the top
 // quarter of the shirt, then keeps only the largest connected piece, which also drops the hook.
 // It won't recognise white, black or clear plastic hangers.
@@ -260,13 +260,16 @@ const sw = Math.round(tw * scale);
 const sh = Math.round(th * scale);
 const resized = await sharp(trimmed.data).resize(sw, sh, { kernel: "lanczos3" }).toBuffer();
 
-const out = path.join(process.cwd(), "public", "shirts", `${name}.png`);
+const out = path.join(process.cwd(), "public", "shirts", `${name}.webp`);
 const framed = await sharp({ create: { width: W, height: H, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
   .composite([{ input: resized, left: Math.round((W - sw) / 2), top: TOP_MARGIN }])
   .raw()
   .toBuffer();
 bleedColour(framed, W, H, 12);
-await sharp(framed, { raw: { width: W, height: H, channels: 4 } }).png().toFile(out);
+// WebP is ~14× smaller than PNG here. `exact` keeps the colour bled under transparent pixels.
+await sharp(framed, { raw: { width: W, height: H, channels: 4 } })
+  .webp({ quality: 90, alphaQuality: 100, exact: true, effort: 5 })
+  .toFile(out);
 
-console.log(`wrote public/shirts/${name}.png — shirt ${tw}×${th}px scaled ×${scale.toFixed(2)} to ${sw}×${sh}px`);
+console.log(`wrote public/shirts/${name}.webp — shirt ${tw}×${th}px scaled ×${scale.toFixed(2)} to ${sw}×${sh}px`);
 if (scale > 1.5) console.warn(`warning: upscaled ×${scale.toFixed(1)}; it will look soft. A larger source image would be sharper.`);
