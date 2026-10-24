@@ -113,9 +113,15 @@ function topEdgeY(mask: AlphaMask, x: number) {
  * garment's shoulders do (dropped shoulders, tall collars) so the wire stays inside the fabric.
  * It sits a little behind the cloth so the bar never pokes through the shirt's face.
  */
-/** Opaque extent (hanger-local x) of the garment's first opaque row: the waistband for pants. */
+const WAIST_BAND_ROWS = 3; // mask rows below the top edge that count as the waistband
+
+/**
+ * Opaque extent (hanger-local x) of the waistband for pants: the widest span across the top few
+ * opaque rows. A single row isn't enough: a small bump on the top edge can be the only thing in
+ * it, depending on how the browser downsamples the mask (coarser on mobile Safari).
+ */
 function waistSpan(mask: AlphaMask) {
-  for (let py = 0; py < mask.height; py++) {
+  const span = (py: number) => {
     let left = -1;
     let right = -1;
     for (let px = 0; px < mask.width; px++) {
@@ -123,10 +129,29 @@ function waistSpan(mask: AlphaMask) {
       if (left < 0) left = px;
       right = px;
     }
-    if (left >= 0) {
-      const toX = (px: number) => ((px + 0.5) / mask.width - 0.5) * SHIRT_WIDTH;
-      return { left: toX(left), right: toX(right), top: -HANGER_DROP - (py / mask.height) * SHIRT_HEIGHT };
+    return { left, right };
+  };
+  for (let py = 0; py < mask.height; py++) {
+    if (span(py).left < 0) continue;
+    let left = mask.width;
+    let right = -1;
+    for (let r = py; r < Math.min(mask.height, py + WAIST_BAND_ROWS); r++) {
+      const s = span(r);
+      if (s.left < 0) continue;
+      left = Math.min(left, s.left);
+      right = Math.max(right, s.right);
     }
+    // The waistband's top is its first row spanning most of that width, not a bump above it.
+    let topRow = py;
+    for (let r = py; r < Math.min(mask.height, py + WAIST_BAND_ROWS); r++) {
+      const s = span(r);
+      if (s.left >= 0 && s.right - s.left >= 0.6 * (right - left)) {
+        topRow = r;
+        break;
+      }
+    }
+    const toX = (px: number) => ((px + 0.5) / mask.width - 0.5) * SHIRT_WIDTH;
+    return { left: toX(left), right: toX(right), top: -HANGER_DROP - (topRow / mask.height) * SHIRT_HEIGHT };
   }
   return { left: -0.15, right: 0.15, top: -HANGER_DROP };
 }
