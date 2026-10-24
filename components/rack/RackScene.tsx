@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Environment } from "@react-three/drei";
 import { MathUtils, NeutralToneMapping, type PerspectiveCamera } from "three";
@@ -8,6 +8,7 @@ import Rack from "./Rack";
 import Sign from "./Sign";
 import RackFallback from "./RackFallback";
 import RackOverlay from "./RackOverlay";
+import RackLoading from "./RackLoading";
 import { INITIAL_INDEX, SHIRTS } from "./shirts";
 import { useRackControls } from "./useRackControls";
 import { ShirtInteraction, usePointerTracking } from "./interaction";
@@ -31,6 +32,15 @@ function hasWebGL() {
   }
 }
 
+/** Mounts only once everything in its Suspense boundary has loaded; reports after the first frame. */
+function SceneReady({ onReady }: { onReady: () => void }) {
+  useEffect(() => {
+    const id = requestAnimationFrame(onReady);
+    return () => cancelAnimationFrame(id);
+  }, [onReady]);
+  return null;
+}
+
 /** Pulls the camera back on narrow screens so the center shirt always fits. */
 function CameraRig() {
   useFrame(({ camera, size }) => {
@@ -52,6 +62,8 @@ export default function RackScene() {
   const [interaction] = useState(() => new ShirtInteraction());
   usePointerTracking(interaction, dragArea);
   const controls = useRackControls(SHIRTS.length, INITIAL_INDEX, dragArea, interaction, setIndex);
+  const [ready, setReady] = useState(false);
+  const markReady = useCallback(() => setReady(true), []);
 
   // Stop rendering (and with it, cloth stepping) while the canvas is scrolled offscreen.
   const [onScreen, setOnScreen] = useState(true);
@@ -103,6 +115,7 @@ export default function RackScene() {
             <Environment preset="studio" environmentIntensity={ENV_INTENSITY} />
             <Rack controls={controls} interaction={interaction} />
             <Sign />
+            <SceneReady onReady={markReady} />
           </Suspense>
 
           <mesh rotation={[-Math.PI / 2, 0, 0]}>
@@ -130,6 +143,8 @@ export default function RackScene() {
         onPrev={() => controls.goTo(controls.target - 1)}
         onNext={() => controls.goTo(controls.target + 1)}
       />
+
+      <RackLoading visible={!ready} />
     </div>
   );
 }
