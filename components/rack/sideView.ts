@@ -1,26 +1,15 @@
-// Side views: the photo (or turn flipbook) a shirt shows when it turns away from the center.
+// Side views: the photo a shirt shows when it turns away from the center.
 import { MathUtils, type BufferAttribute, type Mesh, type MeshStandardMaterial, type Texture } from "three";
-import {
-  SHIRT_HEIGHT,
-  SHIRT_WIDTH,
-  SIDE_VIEW_CUT_AT,
-  SIDE_VIEW_FADE,
-  SIDE_VIEW_HARD_CUT,
-  TURN_COLS,
-  TURN_CUT_DEG,
-  TURN_ROWS,
-} from "./constants";
-import type { TurnSheet } from "./shirts";
+import { SHIRT_HEIGHT, SHIRT_WIDTH, SIDE_VIEW_CUT_AT, SIDE_VIEW_FADE, SIDE_VIEW_HARD_CUT } from "./constants";
 
 export const SIDE_VIEW_ROWS = 16; // plane rows, so the photo can bend with the cloth
 const SIDE_VIEW_HEM_GAIN = 1.1; // follows the simulated hem line one to one
 const SIDE_VIEW_BEND = 0.5; // bend curve exponent: near 1 lets the fabric swing from high up, like the front
 
-/** What one garment shows from the side: still photos, or a turn flipbook. */
+/** What one garment shows from the side: its photo, and a separate one for the left if asymmetric. */
 export type SideViewAssets = {
   material: MeshStandardMaterial;
-  photo: { right: Texture; left: Texture | null } | null;
-  turn: { sheets: { right: TurnSheet; left: TurnSheet }; right: Texture; left: Texture } | null;
+  photo: { right: Texture; left: Texture | null };
 };
 
 /**
@@ -37,21 +26,7 @@ export function updateSideView(
   const material = mesh.material as MeshStandardMaterial;
   let amount: number;
   let front: number;
-  if (assets.turn) {
-    // Real turning frames: show the one nearest the shirt's current angle. Every frame is opaque
-    // and replaces the last outright, so the turn never blends or flashes.
-    const sheet = d < 0 ? assets.turn.sheets.left : assets.turn.sheets.right;
-    const map = d < 0 ? assets.turn.left : assets.turn.right;
-    const degrees = MathUtils.radToDeg(Math.abs(rotY));
-    amount = degrees >= TURN_CUT_DEG ? 1 : 0;
-    front = 1 - amount;
-    let frame = 0;
-    for (let k = 1; k < sheet.angles.length; k++) {
-      if (Math.abs(sheet.angles[k] - degrees) < Math.abs(sheet.angles[frame] - degrees)) frame = k;
-    }
-    map.offset.set((frame % TURN_COLS) / TURN_COLS, 1 - (Math.floor(frame / TURN_COLS) + 1) / TURN_ROWS);
-    if (material.map !== map) material.map = map;
-  } else if (SIDE_VIEW_HARD_CUT) {
+  if (SIDE_VIEW_HARD_CUT) {
     // One-frame swap at the fastest part of the turn: nothing is ever see-through, so nothing can
     // flash or ghost through.
     amount = Math.abs(d) >= SIDE_VIEW_CUT_AT ? 1 : 0;
@@ -69,7 +44,7 @@ export function updateSideView(
   mesh.visible = amount > 0.001;
   mesh.scale.x = d < 0 ? -1 : 1; // the photo faces left; mirror it on the left side
   // Asymmetric garments have their own photo for the left (e.g. a D-ring on one side only).
-  if (assets.photo?.left) {
+  if (assets.photo.left) {
     const map = d < 0 ? assets.photo.left : assets.photo.right;
     if (material.map !== map) material.map = map;
   }
@@ -92,4 +67,18 @@ function bendSideView(mesh: Mesh, hemTip: { x: number; z: number }, rotY: number
     position.setX(i, base + sideways * depth ** SIDE_VIEW_BEND);
   }
   position.needsUpdate = true;
+}
+
+/**
+ * Shows a side photo still (fully opaque, unbent), as the rack shows it on the right, or
+ * `mirrored` as on the left: for capturing it into the product view (see pullOff.ts).
+ */
+export function showSideViewStill(mesh: Mesh, assets: SideViewAssets, mirrored: boolean) {
+  const material = mesh.material as MeshStandardMaterial;
+  material.opacity = 1;
+  mesh.visible = true;
+  mesh.scale.x = mirrored ? -1 : 1;
+  const map = mirrored && assets.photo.left ? assets.photo.left : assets.photo.right;
+  if (material.map !== map) material.map = map;
+  bendSideView(mesh, { x: 0, z: 0 }, 0, mesh.scale.x);
 }

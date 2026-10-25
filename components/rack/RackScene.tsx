@@ -4,6 +4,9 @@ import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Environment } from "@react-three/drei";
 import { MathUtils, NeutralToneMapping, type PerspectiveCamera } from "three";
+import { useBag } from "./bag";
+import BagButton from "./BagButton";
+import BagDrawer from "./BagDrawer";
 import GarmentModal from "./GarmentModal";
 import { PullOff, SOLO_LAYER } from "./pullOff";
 import Rack from "./Rack";
@@ -80,6 +83,8 @@ export default function RackScene() {
   usePointerTracking(interaction, dragArea);
   const controls = useRackControls(SHIRTS.length, INITIAL_INDEX, dragArea, interaction, setIndex);
   const sound = useRackSound();
+  const bag = useBag();
+  const [bagOpen, setBagOpen] = useState(false);
   // View: "open" while the modal is up, "returning" while the shirt flies back onto the rail.
   const [view, setView] = useState<"closed" | "open" | "returning">("closed");
   const [pullOff] = useState(() => new PullOff(() => setView("closed")));
@@ -116,7 +121,14 @@ export default function RackScene() {
         className="pointer-events-none absolute inset-0 h-full w-full"
         style={{ display: "none" }}
       />
-      {view === "open" && <GarmentModal shirt={SHIRTS[index]} pullOff={pullOff} onClose={closeView} />}
+      {view === "open" && (
+        <GarmentModal
+          shirt={SHIRTS[index]}
+          pullOff={pullOff}
+          onAdd={(size) => bag.add(SHIRTS[index].id, size)}
+          onClose={closeView}
+        />
+      )}
 
       <div
         ref={dragArea}
@@ -196,7 +208,9 @@ export default function RackScene() {
         />
 
         <SoundToggle sound={sound} />
+        <BagButton count={bag.count} onOpen={() => setBagOpen(true)} />
       </div>
+      {bagOpen && <BagDrawer bag={bag} onClose={() => setBagOpen(false)} />}
 
       <RackLoading visible={!ready} />
     </div>

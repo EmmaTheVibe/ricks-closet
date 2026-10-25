@@ -3,7 +3,6 @@ import { useThree } from "@react-three/fiber";
 import { useTexture } from "@react-three/drei";
 import {
   DoubleSide,
-  LinearFilter,
   MeshBasicMaterial,
   MeshStandardMaterial,
   SRGBColorSpace,
@@ -16,8 +15,6 @@ import {
   GRID_COLS_MOBILE,
   GRID_ROWS,
   GRID_ROWS_MOBILE,
-  TURN_COLS,
-  TURN_ROWS,
 } from "./constants";
 import { SHIRTS } from "./shirts";
 import { ShirtSurface } from "./shirtSurface";
@@ -30,10 +27,8 @@ function pickGrid() {
     : { cols: GRID_COLS, rows: GRID_ROWS };
 }
 
-// Side-profile photos and turn sheets, for the garments that have them (static list).
-const SIDE_URLS = SHIRTS.flatMap((s) =>
-  [s.side, s.sideLeft, s.turn?.right.src, s.turn?.left.src].filter((u): u is string => Boolean(u)),
-);
+// Side-profile photos, for the garments that have them (static list).
+const SIDE_URLS = SHIRTS.flatMap((s) => [s.side, s.sideLeft].filter((u): u is string => Boolean(u)));
 
 /** Loads every garment's textures and builds what each one needs to render; disposes on unmount. */
 export function useGarmentAssets() {
@@ -54,27 +49,11 @@ export function useGarmentAssets() {
   const sideViews = useMemo(
     () =>
       SHIRTS.map((s): SideViewAssets | null => {
-        if (!s.side && !s.turn) return null;
+        if (!s.side) return null;
         const photo = (url: string) => sideTextures[SIDE_URLS.indexOf(url)];
-        // A turn sheet shows one frame at a time from its 4×3 grid.
-        const sheet = (url: string) => {
-          const texture = photo(url).clone();
-          // Set here, not inherited: the clone is made before useTexture's onLoad marks the
-          // source sRGB, and as linear data dark fabric would render washed-out grey.
-          texture.colorSpace = SRGBColorSpace;
-          texture.anisotropy = anisotropy;
-          texture.repeat.set(1 / TURN_COLS, 1 / TURN_ROWS);
-          texture.generateMipmaps = false; // mipmaps would bleed neighbouring frames together
-          texture.minFilter = LinearFilter;
-          texture.needsUpdate = true;
-          return texture;
-        };
-        const turn = s.turn
-          ? { sheets: s.turn, right: sheet(s.turn.right.src), left: sheet(s.turn.left.src) }
-          : null;
-        const photos = s.side ? { right: photo(s.side), left: s.sideLeft ? photo(s.sideLeft) : null } : null;
+        const photos = { right: photo(s.side), left: s.sideLeft ? photo(s.sideLeft) : null };
         const material = new MeshStandardMaterial({
-          map: turn?.right ?? photos!.right,
+          map: photos.right,
           alphaTest: 0.5,
           side: DoubleSide, // mirrored for garments left of center
           transparent: true,
@@ -83,17 +62,13 @@ export function useGarmentAssets() {
           // instead of the two fighting over depth as the shirt turns.
           depthWrite: false,
         });
-        return { material, photo: turn ? null : photos, turn };
+        return { material, photo: photos };
       }),
-    [sideTextures, anisotropy],
+    [sideTextures],
   );
   useEffect(
     () => () =>
-      sideViews.forEach((v) => {
-        v?.material.dispose();
-        v?.turn?.right.dispose();
-        v?.turn?.left.dispose();
-      }),
+      sideViews.forEach((v) => v?.material.dispose()),
     [sideViews],
   );
 

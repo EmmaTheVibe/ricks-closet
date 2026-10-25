@@ -8,7 +8,7 @@ import { centerSlotRate, layoutForAspect, slotRotationY, slotX, wrapDistance } f
 import type { Placement, PullOff } from "./pullOff";
 import RackSlot, { emptySlotRefs, FLOOR_Y, type SlotRefs } from "./RackSlot";
 import { SHIRTS } from "./shirts";
-import { updateSideView } from "./sideView";
+import { showSideViewStill, updateSideView } from "./sideView";
 import { useClothSim } from "./useClothSim";
 import { useGarmentAssets } from "./useGarmentAssets";
 import { useHangerAssets } from "./useHangerAssets";
@@ -96,8 +96,24 @@ export default function Rack({ controls, interaction, pullOff }: RackProps) {
 
     stepCloth(dt, controls.offset, poses.current, interaction.clothPointer());
 
-    // View: the shirt is at rest over the modal's image; draw it into the modal, lit as it is here.
-    if (pullOff.wantsCapture) pullOff.captureRest(state.gl, state.scene, camera);
+    // View: the shirt is at rest over the modal's image; draw each view into the modal, lit as here.
+    if (pullOff.wantsCapture) {
+      const { body, sideView } = slots.current[pullOff.index];
+      const assets = sideViews[pullOff.index];
+      pullOff.captureRest(state.gl, state.scene, camera, (kind) => {
+        if (!body) return false;
+        if (kind === null || kind === "front") {
+          // Back to normal: the rack's next frame lays the side view out again.
+          body.visible = true;
+          if (sideView) sideView.visible = false;
+          return kind === "front";
+        }
+        if (!sideView || !assets) return false;
+        body.visible = false;
+        showSideViewStill(sideView, assets, kind === "sideMirrored");
+        return true;
+      });
+    }
   });
 
   return (

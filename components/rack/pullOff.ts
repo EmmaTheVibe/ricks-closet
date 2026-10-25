@@ -1,6 +1,7 @@
 import { MathUtils, Vector3, type Object3D, type PerspectiveCamera, type Scene, type WebGLRenderer } from "three";
 import { HANGER_DROP, RAIL_Y, SHIRT_HEIGHT } from "./constants";
 import { IMAGE_TOP_SHARE } from "./GarmentImage";
+import type { ViewKind } from "./GarmentViews";
 
 const LIFT_TIME = 0.8; // seconds to take a shirt off the rail and fly it to the modal's spot (and back)
 const LIFT_CLEAR = 0.06; // metres up first, so the hook clears the rail before it moves
@@ -13,6 +14,10 @@ const MAX_SETTLE = 1.5; // seconds after arriving: hand over to the modal even i
 export const SOLO_LAYER = 1;
 
 export type Placement = { x: number; y: number; z: number; scale: number };
+/** A modal view's canvas, for the rack to draw the garment into. */
+export type Capture = { canvas: HTMLCanvasElement; kind: ViewKind };
+/** Sets the lifted garment up to be drawn as `kind` (null: back to normal); false if it has no such view. */
+export type Stage = (kind: ViewKind | null) => boolean;
 
 const ray = new Vector3();
 
@@ -34,8 +39,8 @@ export class PullOff {
   private lifting = false;
   private box: DOMRect | null = null; // the modal image's box, until it's turned into `goal`
   private readonly goal: Placement = { x: 0, y: RAIL_Y + LIFT_CLEAR, z: FLY_Z, scale: 1 };
-  private onRest: ((captured: boolean) => void) | null = null;
-  private capture: HTMLCanvasElement | null = null; // the modal's front image, drawn from the lit shirt
+  private onRest: ((drawn: boolean[]) => void) | null = null;
+  private captures: Capture[] = []; // the modal's views, drawn from the lit garment
   private crop: { x: number; y: number; w: number; h: number; cw: number; ch: number } | null = null;
   private pendingCapture = false;
   private arrivedFor = 0;
@@ -60,12 +65,12 @@ export class PullOff {
 
   /**
    * Where the modal shows the garment (its image box, viewport px). Once the shirt rests there, the
-   * rack draws it, lit exactly as on the rack, into `capture` (the modal's front image) and calls
-   * `onRest`, so the image that takes over is the shirt itself, not a flat photo.
+   * rack draws each of the modal's views into `captures`, lit exactly as on the rack, and calls
+   * `onRest` with which were drawn: the image that takes over is the shirt itself, not a flat photo.
    */
-  flyTo = (box: DOMRect, capture: HTMLCanvasElement | null, onRest: (captured: boolean) => void) => {
+  flyTo = (box: DOMRect, captures: Capture[], onRest: (drawn: boolean[]) => void) => {
     this.box = box;
-    this.capture = capture;
+    this.captures = captures;
     this.onRest = onRest;
   };
 
@@ -94,30 +99,30 @@ export class PullOff {
   }
 
   /**
-   * The shirt is at rest over the modal's image: render it (alone, on a clear background) and copy
-   * the image's box into the modal's capture canvas, then hand over.
+   * The shirt is at rest over the modal's image: for each of the modal's views, set the garment
+   * up as that view (`stage`), render it alone on a clear background, and copy the image's box
+   * into that view's canvas. Then hand over, with the garment back to normal.
    */
-  captureRest(gl: WebGLRenderer, scene: Scene, camera: PerspectiveCamera) {
+  captureRest(gl: WebGLRenderer, scene: Scene, camera: PerspectiveCamera, stage: Stage) {
     this.pendingCapture = false;
-    let captured = false;
-    const target = this.capture;
     const crop = this.crop;
-    if (target && crop && this.solo) {
+    const drawn = this.captures.map(({ canvas, kind }) => {
+      if (!crop || !this.solo || !stage(kind)) return false;
       gl.render(scene, camera);
       const sx = gl.domElement.width / crop.cw;
       const sy = gl.domElement.height / crop.ch;
-      target.width = Math.round(crop.w * sx);
-      target.height = Math.round(crop.h * sy);
-      const ctx = target.getContext("2d");
-      if (ctx) {
-        // Same task as the render, so the drawing buffer still holds the frame.
-        ctx.drawImage(gl.domElement, crop.x * sx, crop.y * sy, crop.w * sx, crop.h * sy, 0, 0, target.width, target.height);
-        captured = true;
-      }
-    }
+      canvas.width = Math.round(crop.w * sx);
+      canvas.height = Math.round(crop.h * sy);
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return false;
+      // Same task as the render, so the drawing buffer still holds the frame.
+      ctx.drawImage(gl.domElement, crop.x * sx, crop.y * sy, crop.w * sx, crop.h * sy, 0, 0, canvas.width, canvas.height);
+      return true;
+    });
+    stage(null);
     const rest = this.onRest;
     this.onRest = null;
-    rest?.(captured);
+    rest?.(drawn);
   }
 
   /** Whether the rack should call freeze() this frame. */

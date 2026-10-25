@@ -1,11 +1,9 @@
 // Garment config. To use real shirts, run `npm run prepare-shirt` on a cut-out image and edit this list,
-// then paint the wooden hanger into a shirt's images with scripts/paint-hanger.mjs.
+// then paint the wooden hanger into a shirt's images with scripts/paint-hanger.mjs. Full-size
+// cut-outs are kept in assets/shirts/, outside public/, so they aren't deployed.
 
 /** Shirts hang from a wooden hanger by the shoulders; pants from a clip hanger by the waistband. */
 export type GarmentKind = "shirt" | "pants";
-
-/** A turn flipbook (scripts/prepare-turn.mjs): one sheet of frames, front -> side, with their angles. */
-export type TurnSheet = { src: string; angles: number[] };
 
 export type ShirtConfig = {
   id: string;
@@ -15,7 +13,7 @@ export type ShirtConfig = {
   kind?: GarmentKind; // default "shirt"
   side?: string; // side-profile image (front facing left), shown when the garment is turned away
   sideLeft?: string; // optional version for the left of the rack (mirrored there), for asymmetric garments
-  turn?: { right: TurnSheet; left: TurnSheet }; // real turning frames; replaces side/sideLeft
+  soldOut?: string[]; // sizes out of stock, e.g. ["XS", "XXL"]: shown crossed out, can't be picked
 };
 
 export const SHIRTS: ShirtConfig[] = [

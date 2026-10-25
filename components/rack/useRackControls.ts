@@ -172,8 +172,8 @@ export function useRackControls(
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      // Arrow keys belong to an open modal (e.g. the size radios in the product view).
-      if (document.querySelector('[aria-modal="true"]')) return;
+      // Arrow keys belong to an open modal or drawer (e.g. the size radios in the product view).
+      if (document.querySelector('[aria-modal="true"], dialog[open]')) return;
       if (e.key === "ArrowLeft") controls.nudge(-1, e.repeat);
       else if (e.key === "ArrowRight") controls.nudge(1, e.repeat);
     };
