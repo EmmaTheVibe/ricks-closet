@@ -1,6 +1,7 @@
-// Garment config. To use real shirts, run `npm run prepare-shirt` on a cut-out image and edit this list.
+// Garment config. To use real shirts, run `npm run prepare-shirt` on a cut-out image and edit this list,
+// then paint the wooden hanger into a shirt's images with scripts/paint-hanger.mjs.
 
-/** Shirts hang from a wire hanger by the shoulders; pants from a clip hanger by the waistband. */
+/** Shirts hang from a wooden hanger by the shoulders; pants from a clip hanger by the waistband. */
 export type GarmentKind = "shirt" | "pants";
 
 /** A turn flipbook (scripts/prepare-turn.mjs): one sheet of frames, front -> side, with their angles. */

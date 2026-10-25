@@ -73,6 +73,7 @@ export const KEY_LIGHT_INTENSITY = 1.4;
 export const KEY_LIGHT_COLOR = "#fff2e2"; // slightly warm, balancing the cool studio environment
 export const FLOOR_SHADOW_SIZE: [number, number] = [0.85, 0.3]; // oval under each shirt: across, front-to-back
 export const FLOOR_SHADOW_OPACITY = 0.28;
+export const HANGER_WOOD_COLOR = "#a0683a"; // wooden hanger finish (the logo's hanger)
 export const HANGER_BAR_DROP = 0.18; // rail centre to the hanger's bottom bar; cloth above it is pinned
 export const RAIL_Y = 1.3;
 export const SIGN_SIZE: [number, number, number] = [0.48, 0.14, 0.003]; // swing tag: width, height, thickness
