@@ -137,6 +137,8 @@ export function useRackControls(
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      // Arrow keys belong to an open modal (e.g. the size radios in the product view).
+      if (document.querySelector("dialog[open]")) return;
       if (e.key === "ArrowLeft") controls.goTo(controls.target - 1);
       else if (e.key === "ArrowRight") controls.goTo(controls.target + 1);
     };

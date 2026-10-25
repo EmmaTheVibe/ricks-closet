@@ -22,21 +22,27 @@ function wire(points: [number, number, number][], segments: number, radius = WIR
   return new TubeGeometry(curve, segments, radius, radius > WIRE_RADIUS ? 10 : 6, closed);
 }
 
+/**
+ * The hook's centreline as [y, z] (it lies in the x = 0 plane), from its bottom end up and over.
+ * The bottom end meets the top of the wooden neck painted into the shirt's images: on the turning
+ * axis, so it meets the neck in the front view and in the side photos alike.
+ */
+export const HOOK_POINTS: [number, number][] = [
+  [-HANGER_DROP - 0.01, 0],
+  [-0.06, 0],
+  [-0.05, 0],
+  [-0.025, 0.012],
+  [0, 0.017],
+  [0.017, 0],
+  [0, -0.017],
+  [-0.012, -0.014],
+];
+export const HOOK_RADIUS = WIRE_RADIUS;
+
 /** Hook stays aligned with the rail (it swivels); the hanger body turns with the shirt. */
 export function buildHook() {
   return wire(
-    [
-      // Down to the top of the wooden neck painted into the shirt's images: on the turning axis,
-      // so it meets the neck in the front view and in the side photos alike.
-      [0, -HANGER_DROP - 0.01, 0],
-      [0, -0.06, 0],
-      [0, -0.05, 0],
-      [0, -0.025, 0.012],
-      [0, 0, 0.017],
-      [0, 0.017, 0],
-      [0, 0, -0.017],
-      [0, -0.012, -0.014],
-    ],
+    HOOK_POINTS.map(([y, z]): [number, number, number] => [0, y, z]),
     24,
   );
 }

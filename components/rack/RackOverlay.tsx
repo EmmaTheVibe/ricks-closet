@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import GarmentModal from "./GarmentModal";
 import type { ShirtConfig } from "./shirts";
 
 type RackOverlayProps = {
@@ -18,6 +19,7 @@ export default function RackOverlay({ shirt, onPrev, onNext }: RackOverlayProps)
 
   // Name and price settle in each time a new shirt reaches the centre.
   const details = useRef<HTMLDivElement>(null);
+  const [viewing, setViewing] = useState(false);
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     details.current?.animate(DETAILS_IN, { duration: 320, easing: "ease-out" });
@@ -36,15 +38,18 @@ export default function RackOverlay({ shirt, onPrev, onNext }: RackOverlayProps)
           </div>
           <button
             type="button"
+            onClick={() => setViewing(true)}
+            aria-haspopup="dialog"
             className="mt-3 rounded-full bg-stone-900 px-8 py-2.5 text-sm font-bold text-white transition hover:bg-stone-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900"
           >
-            Buy
+            View
           </button>
         </div>
         <button type="button" className={button} onClick={onNext} aria-label="Next shirt">
           →
         </button>
       </div>
+      {viewing && <GarmentModal shirt={shirt} onClose={() => setViewing(false)} />}
     </div>
   );
 }

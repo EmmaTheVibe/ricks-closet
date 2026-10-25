@@ -33,4 +33,10 @@ export const SHIRTS: ShirtConfig[] = [
   { id: "focus-polo", name: "Focus Polo", price: "₦87,000", texture: "/shirts/focus-polo.webp", side: "/shirts/focus-polo-side.webp", sideLeft: "/shirts/focus-polo-side-left.webp" },
 ];
 
+/** Sizes offered in the product view: letter sizes for shirts, waist sizes (inches) for pants. */
+export const SIZES: Record<GarmentKind, string[]> = {
+  shirt: ["XS", "S", "M", "L", "XL", "XXL"],
+  pants: ["28", "30", "32", "34", "36", "38"],
+};
+
 export const INITIAL_INDEX = Math.floor((SHIRTS.length - 1) / 2);
