@@ -5,6 +5,8 @@
 // --remove-hanger: for photos taken on a wooden hanger. Clears warm-tinted (wood) pixels in the top
 // quarter of the shirt, then keeps only the largest connected piece, which also drops the hook.
 // It won't recognise white, black or clear plastic hangers.
+// --match <front-name>: for a side view. Scales and places it so its height and top line up with
+// public/shirts/<front-name>.webp, so the rack can crossfade between the two without a jump.
 import path from "node:path";
 import sharp from "sharp";
 
@@ -16,7 +18,9 @@ const RIM_TOLERANCE = 45; // max brightness gap between an edge pixel and the fa
 
 const args = process.argv.slice(2);
 const removeHanger = args.includes("--remove-hanger");
-const [input, name] = args.filter((a) => !a.startsWith("--"));
+const matchAt = args.indexOf("--match");
+const matchName = matchAt >= 0 ? args[matchAt + 1] : null;
+const [input, name] = args.filter((a, i) => !a.startsWith("--") && (matchAt < 0 || i !== matchAt + 1));
 if (!input || !name) {
   console.error("Usage: npm run prepare-shirt -- <input.png> <output-name> [--remove-hanger]");
   process.exit(1);
@@ -255,14 +259,31 @@ const trimmed = await sharp(source.data, { raw: source.info })
   .png()
   .toBuffer({ resolveWithObject: true });
 const { width: tw, height: th } = trimmed.info;
-const scale = Math.min((W - 2 * SIDE_MARGIN) / tw, (H - TOP_MARGIN) / th);
+/** Opaque bounding box (top and height) of an already-prepared garment image. */
+async function opaqueExtent(file) {
+  const { data, info } = await sharp(file).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  let top = info.height;
+  let bottom = -1;
+  for (let y = 0; y < info.height; y++) {
+    for (let x = 0; x < info.width; x++) {
+      if (data[(y * info.width + x) * 4 + 3] < 128) continue;
+      top = Math.min(top, y);
+      bottom = y;
+      break;
+    }
+  }
+  return { top, height: bottom - top + 1 };
+}
+
+const match = matchName ? await opaqueExtent(path.join(process.cwd(), "public", "shirts", `${matchName}.webp`)) : null;
+const scale = match ? match.height / th : Math.min((W - 2 * SIDE_MARGIN) / tw, (H - TOP_MARGIN) / th);
 const sw = Math.round(tw * scale);
 const sh = Math.round(th * scale);
 const resized = await sharp(trimmed.data).resize(sw, sh, { kernel: "lanczos3" }).toBuffer();
 
 const out = path.join(process.cwd(), "public", "shirts", `${name}.webp`);
 const framed = await sharp({ create: { width: W, height: H, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
-  .composite([{ input: resized, left: Math.round((W - sw) / 2), top: TOP_MARGIN }])
+  .composite([{ input: resized, left: Math.round((W - sw) / 2), top: match ? match.top : TOP_MARGIN }])
   .raw()
   .toBuffer();
 bleedColour(framed, W, H, 12);

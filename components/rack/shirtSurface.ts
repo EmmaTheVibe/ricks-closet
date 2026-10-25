@@ -67,6 +67,8 @@ export class ShirtSurface {
   private offsets: Float32Array;
   private hem: number[]; // fabric vertices in the lower part of the shirt
   readonly hemShift = { x: 0, z: 0 }; // how far the hem has swung from rest, hanger-local
+  private hemEdge: number[]; // lowest fabric vertex in each column: the hem line itself
+  readonly hemTip = { x: 0, z: 0 }; // how far the hem line itself has swung (moves more than hemShift)
 
   constructor(cols: number, rows: number, mask: AlphaMask) {
     this.mid = createPanel(cols, rows);
@@ -76,6 +78,15 @@ export class ShirtSurface {
     this.offsets = panelOffsets(cols, rows, mask);
     this.hem = [];
     for (let i = Math.floor(rows * 0.65) * cols; i < rows * cols; i++) if (this.offsets[i] > 0) this.hem.push(i);
+    this.hemEdge = [];
+    for (let c = 0; c < cols; c++) {
+      for (let r = rows - 1; r >= 0; r--) {
+        if (this.offsets[r * cols + c] > 0) {
+          this.hemEdge.push(r * cols + c);
+          break;
+        }
+      }
+    }
     this.inflate();
   }
 
@@ -116,6 +127,16 @@ export class ShirtSurface {
     const count = Math.max(1, this.hem.length);
     this.hemShift.x = dx / count;
     this.hemShift.z = dz / count;
+
+    let tx = 0;
+    let tz = 0;
+    for (const i of this.hemEdge) {
+      tx += p[i * 3] - this.rest[i * 3];
+      tz += p[i * 3 + 2] - this.rest[i * 3 + 2];
+    }
+    const edges = Math.max(1, this.hemEdge.length);
+    this.hemTip.x = tx / edges;
+    this.hemTip.z = tz / edges;
     this.front.computeVertexNormals();
     this.back.computeVertexNormals();
   }

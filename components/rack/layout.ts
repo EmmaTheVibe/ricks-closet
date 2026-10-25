@@ -5,10 +5,12 @@ import {
   NARROW_ASPECT,
   SHIRT_SPACING,
   SHIRT_SPACING_NARROW,
+  PANTS_ROTATION_DEG,
   SIDE_ROTATION_DEG,
 } from "./constants";
 
 const SIDE_ROTATION = MathUtils.degToRad(SIDE_ROTATION_DEG);
+const PANTS_ROTATION = MathUtils.degToRad(PANTS_ROTATION_DEG);
 
 export type RackLayout = { spacing: number; gap: number };
 
@@ -40,7 +42,7 @@ export function slotX(d: number, layout: RackLayout) {
   return d * layout.spacing + sideAmount(d) * layout.gap;
 }
 
-/** Turn of a shirt `d` slots from the center: 0 at center, ±SIDE_ROTATION_DEG at the sides. */
-export function slotRotationY(d: number) {
-  return -sideAmount(d) * SIDE_ROTATION;
+/** Turn of a garment `d` slots from the center: 0 at center, up to ±SIDE_ROTATION_DEG (less for pants). */
+export function slotRotationY(d: number, pants = false) {
+  return -sideAmount(d) * (pants ? PANTS_ROTATION : SIDE_ROTATION);
 }
