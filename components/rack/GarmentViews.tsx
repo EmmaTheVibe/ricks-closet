@@ -64,7 +64,9 @@ export default function GarmentViews({ shirt, mainRef, hideMain = false, onCaptu
       {/* Hidden with visibility, not opacity, so the hand-over from the 3D shirt is instant. */}
       <div
         ref={mainRef}
-        className="relative aspect-[1024/1415] h-[min(52dvh,30rem)]"
+        // Sized by width (capped at the column's width), so on a tall, narrow phone it never comes
+        // out wider than the panel; the aspect ratio gives the height.
+        className="relative aspect-[1024/1415] w-[min(100%,calc(min(52dvh,30rem)*1024/1415))]"
         style={{ visibility: hideMain ? "hidden" : "visible" }}
       >
         {views.map((view, i) => (
@@ -90,7 +92,7 @@ export default function GarmentViews({ shirt, mainRef, hideMain = false, onCaptu
       </div>
 
       {views.length > 1 && (
-        <div className="flex gap-2" role="group" aria-label="Views">
+        <div className="flex flex-wrap justify-center gap-2" role="group" aria-label="Views">
           {views.map((view, i) => (
             <button
               key={view.label}

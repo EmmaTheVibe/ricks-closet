@@ -4,6 +4,8 @@
 
 /** Shirts hang from a wooden hanger by the shoulders; pants from a clip hanger by the waistband. */
 export type GarmentKind = "shirt" | "pants";
+/** Anything sold in sizes: garments, and shoes (EU sizes). */
+export type SizedKind = GarmentKind | "shoes";
 
 export type ShirtConfig = {
   id: string;
@@ -32,9 +34,10 @@ export const SHIRTS: ShirtConfig[] = [
 ];
 
 /** Sizes offered in the product view: letter sizes for shirts, waist sizes (inches) for pants. */
-export const SIZES: Record<GarmentKind, string[]> = {
+export const SIZES: Record<SizedKind, string[]> = {
   shirt: ["XS", "S", "M", "L", "XL", "XXL"],
   pants: ["28", "30", "32", "34", "36", "38"],
+  shoes: ["40", "41", "42", "43", "44", "45", "46"], // EU
 };
 
 export const INITIAL_INDEX = Math.floor((SHIRTS.length - 1) / 2);

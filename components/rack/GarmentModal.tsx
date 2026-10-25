@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import BagDrop from "./BagDrop";
 import GarmentViews from "./GarmentViews";
 import type { Capture, PullOff } from "./pullOff";
+import SizeGuide from "./SizeGuide";
 import SizePicker from "./SizePicker";
 import { SIZES, type ShirtConfig } from "./shirts";
 
@@ -28,6 +29,7 @@ export default function GarmentModal({ shirt, pullOff, onAdd, onClose }: Garment
   const closeButton = useRef<HTMLButtonElement>(null);
   const [size, setSize] = useState<string | null>(null);
   const [added, setAdded] = useState(false); // briefly confirms "Added to bag"
+  const [guideOpen, setGuideOpen] = useState(false);
   // The size going into the bag, and the front to drop (as lit on the rack, if it was captured).
   const [dropping, setDropping] = useState<{ size: string; source?: HTMLCanvasElement } | null>(null);
   useEffect(() => {
@@ -104,7 +106,8 @@ export default function GarmentModal({ shirt, pullOff, onAdd, onClose }: Garment
       <div
         className={`relative max-h-[calc(100dvh-2rem)] w-[min(52rem,100%)] overflow-y-auto rounded-3xl bg-white text-stone-900 shadow-2xl transition-opacity duration-300 motion-reduce:transition-none ${shown ? "opacity-100" : "opacity-0"}`}
       >
-        <div className="grid md:grid-cols-[1.15fr_1fr]">
+        {/* minmax(0, 1fr): a wide child can never stretch a column past the panel. */}
+        <div className="grid grid-cols-[minmax(0,1fr)] md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
           <GarmentViews
             shirt={shirt}
             mainRef={mainView}
@@ -123,7 +126,23 @@ export default function GarmentModal({ shirt, pullOff, onAdd, onClose }: Garment
               <p className="mt-1 font-mono text-lg font-bold text-stone-600">{shirt.price}</p>
             </div>
 
-            <SizePicker sizes={SIZES[shirt.kind ?? "shirt"]} soldOut={shirt.soldOut} value={size} onChange={setSize} />
+            <div className="relative">
+              <SizePicker sizes={SIZES[shirt.kind ?? "shirt"]} soldOut={shirt.soldOut} value={size} onChange={setSize} />
+              <button
+                type="button"
+                aria-expanded={guideOpen}
+                aria-controls="size-guide"
+                onClick={() => setGuideOpen((open) => !open)}
+                className="absolute top-0 right-0 text-xs font-bold text-stone-700 underline underline-offset-2 hover:text-stone-900"
+              >
+                Size guide
+              </button>
+              {guideOpen && (
+                <div className="mt-4">
+                  <SizeGuide id="size-guide" kind={shirt.kind ?? "shirt"} selected={size} />
+                </div>
+              )}
+            </div>
 
             <div className="mt-auto">
               <button

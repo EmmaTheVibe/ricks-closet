@@ -10,7 +10,7 @@ const BAG_W = 220;
 const BAG_H = 240;
 // Fits inside the bag below the front's rim (only the hook peeks over), so it disappears into it.
 const GARMENT_W = 150;
-const GARMENT_H = Math.round(GARMENT_W * (1415 / 1024)); // the modal image's box: garment plus hook headroom
+const GARMENT_ASPECT = 1024 / 1415; // a garment image's box: garment plus hook headroom
 
 type BagDropProps = {
   /** The front, as lit on the rack (the View capture), if there is one... */
@@ -19,6 +19,9 @@ type BagDropProps = {
   src: string;
   /** Called when the garment is in the bag and the layer has gone. */
   onDone: () => void;
+  /** The image's width / height, and the share of it above the item (a garment's hook headroom). */
+  aspect?: number;
+  topShare?: number;
 };
 
 /**
@@ -26,7 +29,8 @@ type BagDropProps = {
  * the garment's front drops into it, the bag takes the weight, and the layer fades away. Always
  * the front, whatever view the modal shows, so it reads the same for shirts and trousers.
  */
-export default function BagDrop({ source, src, onDone }: BagDropProps) {
+export default function BagDrop({ source, src, onDone, aspect = GARMENT_ASPECT, topShare = IMAGE_TOP_SHARE }: BagDropProps) {
+  const garmentHeight = Math.round(GARMENT_W / aspect);
   const layer = useRef<HTMLDivElement>(null);
   const bag = useRef<HTMLDivElement>(null);
   const garment = useRef<HTMLDivElement>(null);
@@ -81,7 +85,7 @@ export default function BagDrop({ source, src, onDone }: BagDropProps) {
       await play(
         els.garment!,
         [
-          { transform: `translateY(${-BAG_H - GARMENT_H}px)`, opacity: 1 },
+          { transform: `translateY(${-BAG_H - garmentHeight}px)`, opacity: 1 },
           { transform: "translateY(0)", opacity: 1 },
         ],
         { duration: 420, easing: "cubic-bezier(0.55, 0, 1, 0.45)", fill: "forwards" },
@@ -105,7 +109,7 @@ export default function BagDrop({ source, src, onDone }: BagDropProps) {
       cancelled = true;
       running.forEach((a) => a.cancel());
     };
-  }, [source]);
+  }, [source, garmentHeight]);
 
   return (
     <div
@@ -127,16 +131,16 @@ export default function BagDrop({ source, src, onDone }: BagDropProps) {
           className="absolute left-1/2 -translate-x-1/2"
           style={{
             width: GARMENT_W,
-            height: GARMENT_H,
-            top: BAG_H * 0.18 - GARMENT_H * IMAGE_TOP_SHARE,
-            transform: `translateY(${-BAG_H - GARMENT_H}px)`,
+            height: garmentHeight,
+            top: BAG_H * 0.18 - garmentHeight * topShare,
+            transform: `translateY(${-BAG_H - garmentHeight}px)`,
           }}
         >
           {source ? (
             <canvas ref={copy} className="h-full w-full" />
           ) : (
             // eslint-disable-next-line @next/next/no-img-element -- a prepared, already-small WebP
-            <img src={src} alt="" className="h-full w-full object-contain object-bottom" style={{ paddingTop: `${IMAGE_TOP_SHARE * 100}%` }} />
+            <img src={src} alt="" className="h-full w-full object-contain object-bottom" style={{ paddingTop: `${topShare * 100}%` }} />
           )}
         </div>
 

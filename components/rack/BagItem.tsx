@@ -1,11 +1,11 @@
-import { formatNaira, garmentOf, MAX_QUANTITY, priceValue, type BagLine } from "./bag";
+import { formatNaira, itemOf, MAX_QUANTITY, priceValue, type BagLine } from "./bag";
 import { BACKGROUND } from "./constants";
 
 type BagItemProps = { line: BagLine; onQuantity: (quantity: number) => void };
 
 /** One line in the bag: picture, name, size, quantity and line total. */
 export default function BagItem({ line, onQuantity }: BagItemProps) {
-  const garment = garmentOf(line);
+  const garment = itemOf(line);
   if (!garment) return null;
   const stepper =
     "grid size-8 place-items-center rounded-full text-stone-700 transition hover:bg-stone-900/5 disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-stone-900";
@@ -13,8 +13,10 @@ export default function BagItem({ line, onQuantity }: BagItemProps) {
   return (
     <li className="flex gap-4 py-4">
       <div className="h-24 w-20 shrink-0 overflow-hidden rounded-xl p-1" style={{ background: BACKGROUND }}>
-        {/* eslint-disable-next-line @next/next/no-img-element -- a prepared, already-small WebP */}
-        <img src={garment.texture} alt="" className="h-full w-full object-contain" />
+        {garment.image && (
+          // eslint-disable-next-line @next/next/no-img-element -- a prepared WebP or a small capture
+          <img src={garment.image} alt="" className="h-full w-full object-contain" />
+        )}
       </div>
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex items-start justify-between gap-3">
