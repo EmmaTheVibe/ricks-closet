@@ -16,6 +16,9 @@ export type SlotRefs = {
   sideView: Mesh | null;
 };
 
+/** World height of the floor shadows: just above the floor. */
+export const FLOOR_Y = 0.002;
+
 export const emptySlotRefs = (): SlotRefs => ({
   slot: null,
   body: null,
@@ -86,7 +89,7 @@ export default function RackSlot({
         {hanger.metal && <mesh geometry={hanger.metal} material={metal} castShadow />}
         <mesh
           ref={set("shadow")}
-          position={[0, -RAIL_Y + 0.002, 0]}
+          position={[0, FLOOR_Y - RAIL_Y, 0]}
           rotation={[-Math.PI / 2, 0, 0]}
           scale={[...FLOOR_SHADOW_SIZE, 1]}
           material={floorShadow}

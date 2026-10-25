@@ -4,11 +4,16 @@ import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Environment } from "@react-three/drei";
 import { MathUtils, NeutralToneMapping, type PerspectiveCamera } from "three";
+import GarmentModal from "./GarmentModal";
+import { PullOff, SOLO_LAYER } from "./pullOff";
 import Rack from "./Rack";
 import Sign from "./Sign";
 import RackFallback from "./RackFallback";
 import RackOverlay from "./RackOverlay";
 import RackLoading from "./RackLoading";
+import RackSounds from "./RackSounds";
+import { useRackSound } from "./rackSound";
+import SoundToggle from "./SoundToggle";
 import { INITIAL_INDEX, SHIRTS } from "./shirts";
 import { useRackControls } from "./useRackControls";
 import { ShirtInteraction, usePointerTracking } from "./interaction";
@@ -74,6 +79,18 @@ export default function RackScene() {
   const [interaction] = useState(() => new ShirtInteraction());
   usePointerTracking(interaction, dragArea);
   const controls = useRackControls(SHIRTS.length, INITIAL_INDEX, dragArea, interaction, setIndex);
+  const sound = useRackSound();
+  // View: "open" while the modal is up, "returning" while the shirt flies back onto the rail.
+  const [view, setView] = useState<"closed" | "open" | "returning">("closed");
+  const [pullOff] = useState(() => new PullOff(() => setView("closed")));
+  const openView = () => {
+    setView("open");
+    pullOff.lift(index);
+  };
+  const closeView = () => {
+    setView("returning");
+    pullOff.putBack();
+  };
   const [ready, setReady] = useState(false);
   const markReady = useCallback(() => setReady(true), []);
 
@@ -91,11 +108,27 @@ export default function RackScene() {
 
   return (
     <div className="relative h-full w-full">
-      <div ref={dragArea} className="absolute inset-0 touch-none select-none">
+      {/* View stacks, bottom to top: the rack frozen into a still, the modal, then the canvas
+          drawing only the shirt (see pullOff.ts). Shown and hidden by the rack's frame loop. */}
+      <canvas
+        ref={(el) => pullOff.setSnapshot(el)}
+        aria-hidden
+        className="pointer-events-none absolute inset-0 h-full w-full"
+        style={{ display: "none" }}
+      />
+      {view === "open" && <GarmentModal shirt={SHIRTS[index]} pullOff={pullOff} onClose={closeView} />}
+
+      <div
+        ref={dragArea}
+        className={`absolute inset-0 touch-none select-none ${view === "closed" ? "" : "pointer-events-none"}`}
+      >
         <Canvas
           shadows="percentage"
           dpr={[1, 2]}
           frameloop={onScreen ? "always" : "never"}
+          // The Canvas sets pointer-events on its own wrapper, so it must be turned off here too:
+          // during View the canvas sits above the modal, and clicks have to go through to it.
+          style={{ pointerEvents: view === "closed" ? "auto" : "none" }}
           camera={{ fov: CAMERA_FOV, position: CAMERA_POSITION }}
           onCreated={({ gl }) => {
             // Khronos PBR Neutral keeps product colours true (ACES, the default, shifts and washes them).
@@ -120,12 +153,15 @@ export default function RackScene() {
             shadow-camera-right={3}
             shadow-camera-top={3}
             shadow-camera-bottom={-1}
+            // Also lights the shirt while it's drawn alone during View.
+            onUpdate={(light) => light.layers.enable(SOLO_LAYER)}
           />
 
           <Suspense fallback={null}>
             {/* drei's "studio" preset, self-hosted (the preset loads from a slow third-party CDN). */}
             <Environment files="/hdri/studio_small_03_1k.hdr" environmentIntensity={ENV_INTENSITY} />
-            <Rack controls={controls} interaction={interaction} />
+            <Rack controls={controls} interaction={interaction} pullOff={pullOff} />
+            <RackSounds controls={controls} sound={sound} />
             <Sign />
             <SceneReady onReady={markReady} />
           </Suspense>
@@ -150,11 +186,17 @@ export default function RackScene() {
         GRAB
       </div>
 
-      <RackOverlay
-        shirt={SHIRTS[index]}
-        onPrev={() => controls.goTo(controls.target - 1)}
-        onNext={() => controls.goTo(controls.target + 1)}
-      />
+      {/* The rack's controls step back while View is up (the canvas covers them then). */}
+      <div inert={view !== "closed"} className={`transition-opacity duration-300 ${view === "closed" ? "" : "opacity-0"}`}>
+        <RackOverlay
+          shirt={SHIRTS[index]}
+          onPrev={() => controls.nudge(-1)}
+          onNext={() => controls.nudge(1)}
+          onView={openView}
+        />
+
+        <SoundToggle sound={sound} />
+      </div>
 
       <RackLoading visible={!ready} />
     </div>

@@ -7,6 +7,11 @@ import { wrapDistance } from "./layout";
 
 const MOTION_DT = 1 / 240;
 const BRAKE_MARGIN = 0.8; // plan braking at 80% of max deceleration so the rack never overshoots
+// Arrow keys and the on-screen arrows step shirt by shirt: the next step waits until the rack is
+// this close (in shirts) to the last one, so it eases in, and its slide sound dips, before moving
+// on. Otherwise quick presses run the target ahead into one long glide.
+const STEP_GAP = 0.08;
+const MAX_QUEUED = 5; // presses waiting their turn; more are dropped, so a burst can't run on long
 
 /**
  * Rack position lives here, outside React state. `offset` is the continuous index of the
@@ -21,6 +26,7 @@ export class RackController {
   private dragStart = 0;
   reducedMotion = false;
   private pxToIndex = 0;
+  private queued = 0; // steps (±) waiting for the rack to reach the last one
 
   constructor(
     readonly count: number,
@@ -51,7 +57,34 @@ export class RackController {
 
   /** Glides to shirt `index` the short way round. */
   goToShirt(index: number) {
+    this.queued = 0;
     this.goTo(this.offset + wrapDistance(index - this.offset, this.count));
+  }
+
+  /**
+   * One shirt along (`dir` ±1), from an arrow key or button. Presses queue and run one at a time;
+   * a press the other way cancels a queued one. A held key's repeats aren't queued: they step only
+   * when the rack is ready, so letting go stops it.
+   */
+  nudge(dir: 1 | -1, repeat = false) {
+    if (this.mode === "drag") return;
+    if (repeat) {
+      if (this.queued === 0 && this.nearTarget) this.goTo(this.target + dir);
+      return;
+    }
+    this.queued = MathUtils.clamp(this.queued + dir, -MAX_QUEUED, MAX_QUEUED);
+    this.advanceQueue();
+  }
+
+  private get nearTarget() {
+    return Math.abs(this.target - this.offset) <= STEP_GAP;
+  }
+
+  private advanceQueue() {
+    if (this.queued === 0 || !this.nearTarget) return;
+    const dir = Math.sign(this.queued);
+    this.queued -= dir;
+    this.goTo(this.target + dir);
   }
 
   private wrap(position: number) {
@@ -59,6 +92,7 @@ export class RackController {
   }
 
   beginDrag() {
+    this.queued = 0;
     this.mode = "drag";
     this.dragStart = this.offset;
     this.velocity = 0;
@@ -97,6 +131,7 @@ export class RackController {
       this.velocity += MathUtils.clamp(change, -RACK_MAX_ACCEL * h, RACK_MAX_ACCEL * h);
       this.offset += this.velocity * h;
     }
+    this.advanceQueue();
     if (Math.abs(this.target - this.offset) < 1e-4 && Math.abs(this.velocity) < 1e-3) {
       // Settled: fold back into [0, count) so the numbers don't grow with every lap.
       this.target = this.offset = this.wrap(this.target);
@@ -138,9 +173,9 @@ export function useRackControls(
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       // Arrow keys belong to an open modal (e.g. the size radios in the product view).
-      if (document.querySelector("dialog[open]")) return;
-      if (e.key === "ArrowLeft") controls.goTo(controls.target - 1);
-      else if (e.key === "ArrowRight") controls.goTo(controls.target + 1);
+      if (document.querySelector('[aria-modal="true"]')) return;
+      if (e.key === "ArrowLeft") controls.nudge(-1, e.repeat);
+      else if (e.key === "ArrowRight") controls.nudge(1, e.repeat);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);

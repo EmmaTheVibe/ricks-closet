@@ -1,11 +1,12 @@
-import { useEffect, useRef, useState } from "react";
-import GarmentModal from "./GarmentModal";
+import { useEffect, useRef } from "react";
 import type { ShirtConfig } from "./shirts";
 
 type RackOverlayProps = {
   shirt: ShirtConfig;
   onPrev: () => void;
   onNext: () => void;
+  /** Opens the product view (the rack takes the shirt off the rail for it). */
+  onView: () => void;
 };
 
 const DETAILS_IN: Keyframe[] = [
@@ -13,13 +14,12 @@ const DETAILS_IN: Keyframe[] = [
   { opacity: 1, transform: "none" },
 ];
 
-export default function RackOverlay({ shirt, onPrev, onNext }: RackOverlayProps) {
+export default function RackOverlay({ shirt, onPrev, onNext, onView }: RackOverlayProps) {
   const button =
     "grid size-11 place-items-center rounded-full border border-stone-900/15 text-stone-800 transition hover:bg-stone-900/5";
 
   // Name and price settle in each time a new shirt reaches the centre.
   const details = useRef<HTMLDivElement>(null);
-  const [viewing, setViewing] = useState(false);
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     details.current?.animate(DETAILS_IN, { duration: 320, easing: "ease-out" });
@@ -38,7 +38,7 @@ export default function RackOverlay({ shirt, onPrev, onNext }: RackOverlayProps)
           </div>
           <button
             type="button"
-            onClick={() => setViewing(true)}
+            onClick={onView}
             aria-haspopup="dialog"
             className="mt-3 rounded-full bg-stone-900 px-8 py-2.5 text-sm font-bold text-white transition hover:bg-stone-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900"
           >
@@ -49,7 +49,6 @@ export default function RackOverlay({ shirt, onPrev, onNext }: RackOverlayProps)
           →
         </button>
       </div>
-      {viewing && <GarmentModal shirt={shirt} onClose={() => setViewing(false)} />}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type Ref } from "react";
 import { BACKGROUND } from "./constants";
 import GarmentImage from "./GarmentImage";
 import type { ShirtConfig } from "./shirts";
@@ -19,22 +19,50 @@ function viewsFor(shirt: ShirtConfig): View[] {
   return views;
 }
 
+type GarmentViewsProps = {
+  shirt: ShirtConfig;
+  /** The large view's box: where the View trick flies the 3D shirt to. */
+  mainRef?: Ref<HTMLDivElement>;
+  /** Hide the large view (the 3D shirt is standing in for it). */
+  hideMain?: boolean;
+  /** Canvas the View trick draws the lit 3D shirt into, standing in for the front photo. */
+  captureRef?: Ref<HTMLCanvasElement>;
+  /** The capture has been drawn: show it instead of the flat front photo. */
+  captured?: boolean;
+};
+
 /** Static product images: the selected view large, with a thumbnail to pick each view. */
-export default function GarmentViews({ shirt }: { shirt: ShirtConfig }) {
+export default function GarmentViews({ shirt, mainRef, hideMain = false, captureRef, captured = false }: GarmentViewsProps) {
   const views = viewsFor(shirt);
   const [active, setActive] = useState(0);
 
   return (
     <div className="flex flex-col items-center gap-4 px-6 pt-8 pb-5" style={{ background: BACKGROUND }}>
       {/* All views stay mounted (and loaded); switching just crossfades. */}
-      <div className="relative aspect-[1024/1415] h-[min(52dvh,30rem)]">
+      {/* Hidden with visibility, not opacity, so the hand-over from the 3D shirt is instant. */}
+      <div
+        ref={mainRef}
+        className="relative aspect-[1024/1415] h-[min(52dvh,30rem)]"
+        style={{ visibility: hideMain ? "hidden" : "visible" }}
+      >
         {views.map((view, i) => (
           <div
             key={view.label}
             aria-hidden={i !== active}
             className={`absolute inset-0 transition-opacity duration-200 motion-reduce:transition-none ${i === active ? "opacity-100" : "opacity-0"}`}
           >
-            <GarmentImage src={view.src} alt={`${shirt.name}, ${view.label.toLowerCase()}`} hook={view.hook} mirror={view.mirror} />
+            {i === 0 ? (
+              // The front: the shirt as lit on the rack (captured), or the flat photo until then.
+              <>
+                {/* "inherit", not "visible": a visible child would show through the hidden main view. */}
+                <div className="h-full w-full" style={{ visibility: captured ? "hidden" : "inherit" }}>
+                  <GarmentImage src={view.src} alt={`${shirt.name}, ${view.label.toLowerCase()}`} hook={view.hook} mirror={view.mirror} />
+                </div>
+                <canvas ref={captureRef} aria-hidden className="absolute inset-0 h-full w-full" />
+              </>
+            ) : (
+              <GarmentImage src={view.src} alt={`${shirt.name}, ${view.label.toLowerCase()}`} hook={view.hook} mirror={view.mirror} />
+            )}
           </div>
         ))}
       </div>

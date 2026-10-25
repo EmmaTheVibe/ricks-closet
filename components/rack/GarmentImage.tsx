@@ -5,6 +5,8 @@ const IMAGE_W = 1024;
 const IMAGE_H = 1280;
 const PX = IMAGE_H / SHIRT_HEIGHT; // image pixels per metre
 const HEADROOM = 135; // room above the image for the hook
+/** Share of a GarmentImage's height above the garment image itself (the hook's headroom). */
+export const IMAGE_TOP_SHARE = HEADROOM / (IMAGE_H + HEADROOM);
 
 /** The hook seen from the front (its curl edge-on) or from the side, as an SVG path. */
 function hookPath(side: boolean) {
