@@ -3,9 +3,11 @@
 //   side:  the neck above the collar, going into the shirt
 //
 //   node scripts/paint-hanger.mjs <id> [git revision, default HEAD]
+//   node scripts/paint-hanger.mjs <id> --side <file>
 //
 // Reads the images as committed at that revision, so it can be re-run while tuning. Once painted
 // images are committed, pass a revision from before they were, or the hanger is painted twice.
+// --side paints just one side photo, as it is on disk: for a new one from prepare-shirt.mjs.
 // Each shirt needs its collar opening traced in OPENINGS (front-texture pixels, 1024x1280), since
 // only that shows wood.
 import { execFileSync } from "node:child_process";
@@ -85,7 +87,10 @@ const OPENINGS = {
   },
 };
 
-const [id, revision = "HEAD"] = process.argv.slice(2);
+const args = process.argv.slice(2);
+const sideAt = args.indexOf("--side");
+const sideFile = sideAt >= 0 ? args[sideAt + 1] : null;
+const [id, revision = "HEAD"] = args.filter((a, i) => sideAt < 0 || (i !== sideAt && i !== sideAt + 1));
 if (!OPENINGS[id]) throw new Error(`No collar opening traced for "${id}"; add it to OPENINGS.`);
 // barHeight: the hanger's face height at the neck. shoulder: the hanger's top edge SHOULDER_DX
 // out from the neck, so the arms line up with the shirt's shoulders (just under their outline).
@@ -158,8 +163,8 @@ function sampleWood(px, py, fn) {
   return [cover / (N * N), rgb.map((c) => c / cover)];
 }
 
-async function load(path) {
-  const file = execFileSync("git", ["show", `${revision}:${path}`], { maxBuffer: 1 << 28 });
+async function load(path, fromDisk = false) {
+  const file = fromDisk ? path : execFileSync("git", ["show", `${revision}:${path}`], { maxBuffer: 1 << 28 });
   const { data } = await sharp(file).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   return data;
 }
@@ -236,8 +241,8 @@ async function paintFront() {
   await save(data, path);
 }
 
-async function paintSide(path) {
-  const data = await load(path);
+async function paintSide(path, fromDisk = false) {
+  const data = await load(path, fromDisk);
   const painted = new Set();
   for (let y = 0; y < 120; y++) {
     for (let x = AXIS - NECK_HALF - 2; x <= AXIS + NECK_HALF + 2; x++) {
@@ -259,7 +264,11 @@ async function paintSide(path) {
   await save(data, path);
 }
 
-await paintFront();
-await paintSide(`public/shirts/${id}-side.webp`);
-// Only asymmetric garments have their own left-side photo.
-if (existsSync(`public/shirts/${id}-side-left.webp`)) await paintSide(`public/shirts/${id}-side-left.webp`);
+if (sideFile) {
+  await paintSide(sideFile, true);
+} else {
+  await paintFront();
+  await paintSide(`public/shirts/${id}-side.webp`);
+  // Only asymmetric garments have their own left-side photo.
+  if (existsSync(`public/shirts/${id}-side-left.webp`)) await paintSide(`public/shirts/${id}-side-left.webp`);
+}

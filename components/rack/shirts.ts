@@ -23,7 +23,7 @@ export const SHIRTS: ShirtConfig[] = [
   { id: "bsa-pocket-shirt", name: "BSA Pocket Shirt", price: "₦102,000", texture: "/shirts/bsa-pocket-shirt.webp", side: "/shirts/bsa-pocket-shirt-side.webp", sideLeft: "/shirts/bsa-pocket-shirt-side-left.webp" },
   { id: "race-car-tee", name: "Race Car Tee", price: "₦67,500", texture: "/shirts/race-car-tee.webp", side: "/shirts/race-car-tee-side.webp", sideLeft: "/shirts/race-car-tee-side-left.webp" },
   { id: "brown-pleated-trousers", name: "Pleated Wool Trousers", price: "₦98,000", texture: "/shirts/brown-pleated-trousers.webp", kind: "pants" },
-  { id: "mask-linen-shirt", name: "Tiki Linen Shirt", price: "₦132,000", texture: "/shirts/mask-linen-shirt.webp", side: "/shirts/mask-linen-shirt-side.webp" },
+  { id: "mask-linen-shirt", name: "Tiki Linen Shirt", price: "₦132,000", texture: "/shirts/mask-linen-shirt.webp", side: "/shirts/mask-linen-shirt-side.webp", sideLeft: "/shirts/mask-linen-shirt-side-left.webp" },
   { id: "line-face-shirt", name: "Faces Shirt", price: "₦111,000", texture: "/shirts/line-face-shirt.webp", side: "/shirts/line-face-shirt-side.webp", sideLeft: "/shirts/line-face-shirt-side-left.webp" },
   { id: "pinstripe-trousers", name: "Pinstripe Trousers", price: "₦96,000", texture: "/shirts/pinstripe-trousers.webp", kind: "pants" },
   { id: "giraffe-shirt", name: "Giraffe Shirt", price: "₦108,000", texture: "/shirts/giraffe-shirt.webp", side: "/shirts/giraffe-shirt-side.webp", sideLeft: "/shirts/giraffe-shirt-side-left.webp" },

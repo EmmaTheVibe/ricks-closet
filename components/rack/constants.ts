@@ -46,6 +46,9 @@ export const PANTS_ROTATION_DEG = 80; // same as shirts, so the rack hangs paral
 export const SIDE_VIEW_FADE: [number, number] = [0.35, 0.85]; // slots from center where the side-view photo fades in
 export const SIDE_VIEW_HARD_CUT = true; // swap front and side photo in one frame (nothing see-through) instead of crossfading
 export const SIDE_VIEW_CUT_AT = 0.6; // slots from center where the hard cut happens
+// Turn angle where a flipbook takes over from the 3D front. Out where the shirt still moves fast:
+// near 0° the swap lands as the rack settles, and the flat frame visibly pops against the cloth.
+export const TURN_CUT_DEG = 50;
 export const TURN_COLS = 4; // turn flipbook sheets (scripts/prepare-turn.mjs): 4×3 frames
 export const TURN_ROWS = 3;
 export const SHIRT_SPACING = 0.35;

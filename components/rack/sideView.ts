@@ -7,6 +7,7 @@ import {
   SIDE_VIEW_FADE,
   SIDE_VIEW_HARD_CUT,
   TURN_COLS,
+  TURN_CUT_DEG,
   TURN_ROWS,
 } from "./constants";
 import type { TurnSheet } from "./shirts";
@@ -42,7 +43,7 @@ export function updateSideView(
     const sheet = d < 0 ? assets.turn.sheets.left : assets.turn.sheets.right;
     const map = d < 0 ? assets.turn.left : assets.turn.right;
     const degrees = MathUtils.radToDeg(Math.abs(rotY));
-    amount = degrees >= sheet.angles[0] * 0.5 ? 1 : 0;
+    amount = degrees >= TURN_CUT_DEG ? 1 : 0;
     front = 1 - amount;
     let frame = 0;
     for (let k = 1; k < sheet.angles.length; k++) {

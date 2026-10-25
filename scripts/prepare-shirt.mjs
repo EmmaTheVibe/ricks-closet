@@ -259,18 +259,22 @@ const trimmed = await sharp(source.data, { raw: source.info })
   .png()
   .toBuffer({ resolveWithObject: true });
 const { width: tw, height: th } = trimmed.info;
-/** Opaque bounding box (top and height) of an already-prepared garment image. */
+/**
+ * Opaque bounding box (top and height) of an already-prepared garment image. Rows narrower than
+ * MIN_ROW don't count toward the top, so a hanger neck painted above the collar
+ * (paint-hanger.mjs) doesn't move it.
+ */
 async function opaqueExtent(file) {
+  const MIN_ROW = 40;
   const { data, info } = await sharp(file).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   let top = info.height;
   let bottom = -1;
   for (let y = 0; y < info.height; y++) {
-    for (let x = 0; x < info.width; x++) {
-      if (data[(y * info.width + x) * 4 + 3] < 128) continue;
-      top = Math.min(top, y);
-      bottom = y;
-      break;
-    }
+    let count = 0;
+    for (let x = 0; x < info.width; x++) if (data[(y * info.width + x) * 4 + 3] >= 128) count++;
+    if (!count) continue;
+    if (count >= MIN_ROW) top = Math.min(top, y);
+    bottom = y;
   }
   return { top, height: bottom - top + 1 };
 }

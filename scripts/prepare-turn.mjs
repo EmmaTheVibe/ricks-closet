@@ -3,10 +3,12 @@
 // estimates each frame's turn angle from its width, picks TILES frames spread over the rack's
 // turn, and packs them into one 4×3 sheet.
 //
-// Usage: node scripts/prepare-turn.mjs <frames-dir> <front-name> <out-name> [--reverse] [--flip]
+// Usage: node scripts/prepare-turn.mjs <frames-dir> <front-name> <out-name> [--reverse] [--flip] [--front]
 //   frames-dir: frames from scripts/extract-frames.swift covering one quarter-turn
 //   --reverse:  the frames run side -> front (e.g. the end of a full spin)
 //   --flip:     mirror horizontally (left-of-rack sheets are stored facing left, like side photos)
+//   --front:    also replace public/shirts/<front-name>.webp with the clip's front frame, at the
+//               same size and position, so the 3D front matches the turn exactly at the switch
 // Writes public/shirts/<out-name>.webp and prints the angles to paste into shirts.ts.
 import { readdirSync } from "node:fs";
 import path from "node:path";
@@ -22,14 +24,15 @@ const TILE_H = 640;
 const MIN_ANGLE = 5; // degrees; below this the rack shows the 3D cloth front
 const MAX_ANGLE = 70; // the rack's side turn (SIDE_ROTATION_DEG)
 const BG_MIN = 150; // background pixels: neutral, between these brightnesses (white prints stay)
-const BG_MAX = 238;
+const BG_MAX = 250; // Hailuo backgrounds run from light grey up to near white
 
 const args = process.argv.slice(2);
 const reverse = args.includes("--reverse");
 const flip = args.includes("--flip");
+const replaceFront = args.includes("--front");
 const [framesDir, frontName, outName] = args.filter((a) => !a.startsWith("--"));
 if (!framesDir || !frontName || !outName) {
-  console.error("Usage: node scripts/prepare-turn.mjs <frames-dir> <front-name> <out-name> [--reverse] [--flip]");
+  console.error("Usage: node scripts/prepare-turn.mjs <frames-dir> <front-name> <out-name> [--reverse] [--flip] [--front]");
   process.exit(1);
 }
 
@@ -137,20 +140,65 @@ function keepLargest(mask, width, height) {
   for (let i = 0; i < mask.length; i++) if (label[i] !== best) mask[i] = 0;
 }
 
-/** Opaque extent of the prepared front image, to line the frames up with it. */
-async function frontExtent(file) {
-  const { data, info } = await sharp(file).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
-  let top = info.height, bottom = -1, left = info.width, right = -1;
-  for (let y = 0; y < info.height; y++) {
-    for (let x = 0; x < info.width; x++) {
-      if (data[(y * info.width + x) * 4 + 3] < 128) continue;
-      top = Math.min(top, y);
-      bottom = Math.max(bottom, y);
-      left = Math.min(left, x);
-      right = Math.max(right, x);
+/**
+ * Scale and position that lay the first frame over the prepared front image: the best outline
+ * overlap, searched at quarter resolution, then refined. Matching outlines rather than bounding
+ * boxes keeps a hanger or hook running off the top of the video from throwing it off.
+ * Returns the frame-to-front scale, the frame x on the turning axis, and the frame y at the
+ * front image's top edge.
+ */
+async function fitToFront(frame, file) {
+  const alphaAt = async (input, raw, width, height) => {
+    const { data } = await sharp(input, raw).ensureAlpha().resize(width, height).raw().toBuffer({ resolveWithObject: true });
+    const mask = new Uint8Array(width * height);
+    for (let i = 0; i < mask.length; i++) mask[i] = data[i * 4 + 3] >= 128 ? 1 : 0;
+    return mask;
+  };
+  const raw = { raw: { width: frame.width, height: frame.height, channels: 4 } };
+  let best = { iou: -1 };
+  const search = async (q, scales, centre, reach) => {
+    const target = await alphaAt(file, undefined, W / q, H / q);
+    for (const s of scales) {
+      const fw = Math.round((frame.width * s) / q);
+      const fh = Math.round((frame.height * s) / q);
+      const mask = await alphaAt(frame.rgba, raw, fw, fh);
+      const [cx, cy] = centre(s);
+      for (let oy = Math.round(cy / q) - reach; oy <= Math.round(cy / q) + reach; oy++) {
+        for (let ox = Math.round(cx / q) - reach; ox <= Math.round(cx / q) + reach; ox++) {
+          let both = 0;
+          let either = 0;
+          for (let y = 0; y < H / q; y++) {
+            const fy = y - oy;
+            for (let x = 0; x < W / q; x++) {
+              const fx = x - ox;
+              const a = target[y * (W / q) + x];
+              const b = fx >= 0 && fy >= 0 && fx < fw && fy < fh ? mask[fy * fw + fx] : 0;
+              both += a & b;
+              either += a | b;
+            }
+          }
+          const iou = both / either;
+          if (iou > best.iou) best = { iou, s, ox: ox * q, oy: oy * q };
+        }
+      }
     }
-  }
-  return { top, bottom, left, right };
+  };
+  // Coarse: bottoms and centres lined up for each scale, then searched around that.
+  const coarse = Array.from({ length: 31 }, (_, k) => 0.8 + k * 0.025);
+  const front = await alphaAt(file, undefined, W, H);
+  let frontBottom = 0;
+  for (let i = 0; i < front.length; i++) if (front[i]) frontBottom = Math.floor(i / W);
+  await search(
+    4,
+    coarse,
+    (s) => [W / 2 - ((frame.left + frame.right) / 2) * s, frontBottom - frame.bottom * s],
+    12,
+  );
+  const fine = Array.from({ length: 9 }, (_, k) => best.s - 0.02 + k * 0.005);
+  const { ox, oy } = best;
+  await search(1, fine, (s) => [ox + ((best.s - s) * frame.width) / 2, oy + ((best.s - s) * frame.height) / 2], 4);
+  console.log(`front fit: scale ${best.s.toFixed(3)}, overlap ${(best.iou * 100).toFixed(1)}%`);
+  return { scale: best.s, axis: (W / 2 - best.ox) / best.s, top: -best.oy / best.s };
 }
 
 const files = readdirSync(framesDir).filter((f) => /\.(jpe?g|png)$/i.test(f)).sort();
@@ -161,15 +209,23 @@ for (const f of files) frames.push({ file: f, ...(await cutout(path.join(framesD
 
 // The first frame is the front view: it sets the scale and position for the whole sequence, so
 // frames keep their relative size and the turn stays smooth.
-const front = await frontExtent(path.join(process.cwd(), "public", "shirts", `${frontName}.webp`));
+const frontFile = path.join(process.cwd(), "public", "shirts", `${frontName}.webp`);
 const ref = frames[0];
-const scale = (front.bottom - front.top) / (ref.bottom - ref.top);
-const axis = (ref.left + ref.right) / 2;
+const { scale, axis, top: refTop } = await fitToFront(ref, frontFile);
 const refWidth = ref.right - ref.left;
 for (const fr of frames) {
   const ratio = Math.min(1, (fr.right - fr.left) / refWidth);
   fr.angle = (Math.acos(ratio) * 180) / Math.PI;
 }
+// The narrowest frame is the side profile. A shirt with depth never reaches zero width, so its
+// estimated angle falls short of 90°: end the sheet there and show it at the rack's full turn,
+// like the side photos (a 90° profile at SIDE_ROTATION_DEG). Later frames turn on toward the back.
+let profile = 0;
+for (let j = 1; j < frames.length; j++) if (frames[j].angle > frames[profile].angle) profile = j;
+console.log(`side profile: ${frames[profile].file}`);
+frames.length = profile + 1;
+const toRack = MAX_ANGLE / frames[profile].angle;
+for (const fr of frames) fr.angle *= toRack;
 
 // Pick frames closest to evenly spaced target angles, keeping them in order.
 const picks = [];
@@ -184,24 +240,82 @@ for (let k = 0; k < TILES; k++) {
   from = Math.min(frames.length - 1, best + 1);
 }
 
-const tiles = [];
-for (const [k, j] of picks.entries()) {
-  const fr = frames[j];
+/** A frame scaled and placed on the garment's 1024×1280 canvas (cropping anything outside it). */
+async function placeFrame(fr) {
   const sw = Math.round(fr.width * scale);
   const sh = Math.round(fr.height * scale);
-  let img = sharp(fr.rgba, { raw: { width: fr.width, height: fr.height, channels: 4 } }).resize(sw, sh);
-  const scaled = await img.png().toBuffer();
+  const scaled = await sharp(fr.rgba, { raw: { width: fr.width, height: fr.height, channels: 4 } })
+    .resize(sw, sh)
+    .png()
+    .toBuffer();
   const left = Math.round(W / 2 - axis * scale);
-  const top = Math.round(front.top - ref.top * scale);
-  // Place on the frame canvas (cropping anything outside it).
+  const top = Math.round(-refTop * scale);
   const canvas = sharp({ create: { width: W, height: H, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } });
   const srcLeft = Math.max(0, -left);
   const srcTop = Math.max(0, -top);
   const cropW = Math.min(sw - srcLeft, W - Math.max(0, left));
   const cropH = Math.min(sh - srcTop, H - Math.max(0, top));
   const piece = await sharp(scaled).extract({ left: srcLeft, top: srcTop, width: cropW, height: cropH }).toBuffer();
-  let framed = canvas.composite([{ input: piece, left: Math.max(0, left), top: Math.max(0, top) }]);
-  let buf = await framed.png().toBuffer();
+  return canvas.composite([{ input: piece, left: Math.max(0, left), top: Math.max(0, top) }]).png().toBuffer();
+}
+
+/**
+ * Copies edge colours outward into transparent pixels (alpha stays 0), so texture filtering on
+ * the GPU never blends the garment's edge with black and draws a halo (as in prepare-shirt.mjs).
+ */
+function bleedColour(px, width, height, passes) {
+  const filled = new Uint8Array(width * height);
+  for (let i = 0; i < filled.length; i++) filled[i] = px[i * 4 + 3] >= 128 ? 1 : 0;
+  for (let pass = 0; pass < passes; pass++) {
+    const next = [];
+    for (let i = 0; i < filled.length; i++) {
+      if (filled[i]) continue;
+      const x = i % width;
+      let r = 0;
+      let g = 0;
+      let b = 0;
+      let n = 0;
+      for (const q of [x > 0 ? i - 1 : -1, x < width - 1 ? i + 1 : -1, i - width, i + width]) {
+        if (q < 0 || q >= filled.length || !filled[q]) continue;
+        r += px[q * 4];
+        g += px[q * 4 + 1];
+        b += px[q * 4 + 2];
+        n++;
+      }
+      if (n) next.push([i, r / n, g / n, b / n]);
+    }
+    for (const [i, r, g, b] of next) {
+      px[i * 4] = r;
+      px[i * 4 + 1] = g;
+      px[i * 4 + 2] = b;
+      filled[i] = 1;
+    }
+  }
+}
+
+if (replaceFront) {
+  // The front frame, cut 1px tighter: its outer pixels are blended with the light background
+  // and would show as a pale rim around the shirt.
+  const fr = frames[0];
+  const mask = new Uint8Array(fr.width * fr.height);
+  for (let i = 0; i < mask.length; i++) mask[i] = fr.rgba[i * 4 + 3] ? 1 : 0;
+  const inner = morph(mask, fr.width, fr.height, 1, false);
+  const rgba = Buffer.from(fr.rgba);
+  for (let i = 0; i < inner.length; i++) rgba[i * 4 + 3] = inner[i] ? 255 : 0;
+  const { data } = await sharp(await placeFrame({ ...fr, rgba }))
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  bleedColour(data, W, H, 12);
+  await sharp(data, { raw: { width: W, height: H, channels: 4 } })
+    .webp({ quality: 90, alphaQuality: 100, exact: true, effort: 5 })
+    .toFile(frontFile);
+  console.log(`wrote public/shirts/${frontName}.webp from ${fr.file}`);
+}
+
+const tiles = [];
+for (const [k, j] of picks.entries()) {
+  const fr = frames[j];
+  let buf = await placeFrame(fr);
   if (flip) buf = await sharp(buf).flop().png().toBuffer();
   tiles.push({
     input: await sharp(buf).resize(TILE_W, TILE_H).png().toBuffer(),
