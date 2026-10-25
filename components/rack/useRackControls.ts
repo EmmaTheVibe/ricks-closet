@@ -27,6 +27,7 @@ export class RackController {
   reducedMotion = false;
   private pxToIndex = 0;
   private queued = 0; // steps (±) waiting for the rack to reach the last one
+  private clicked = false; // the current glide is a jump to a clicked shirt
 
   constructor(
     readonly count: number,
@@ -56,8 +57,14 @@ export class RackController {
   }
 
   /** Glides to shirt `index` the short way round. */
+  /** The current glide is a jump to a clicked shirt (its slide plays quieter). */
+  get jumping() {
+    return this.clicked;
+  }
+
   goToShirt(index: number) {
     this.queued = 0;
+    this.clicked = true;
     this.goTo(this.offset + wrapDistance(index - this.offset, this.count));
   }
 
@@ -68,6 +75,7 @@ export class RackController {
    */
   nudge(dir: 1 | -1, repeat = false) {
     if (this.mode === "drag") return;
+    this.clicked = false;
     if (repeat) {
       if (this.queued === 0 && this.nearTarget) this.goTo(this.target + dir);
       return;
@@ -93,6 +101,7 @@ export class RackController {
 
   beginDrag() {
     this.queued = 0;
+    this.clicked = false;
     this.mode = "drag";
     this.dragStart = this.offset;
     this.velocity = 0;
@@ -137,6 +146,7 @@ export class RackController {
       this.target = this.offset = this.wrap(this.target);
       this.velocity = 0;
       this.mode = "idle";
+      this.clicked = false;
     }
   }
 }

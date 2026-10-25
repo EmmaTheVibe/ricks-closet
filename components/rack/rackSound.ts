@@ -131,8 +131,11 @@ export class RackSound {
     if (this.ctx.state === "suspended") void this.ctx.resume();
   }
 
-  /** Sets the slide for the rack's current speed (0 = at rest, 1 = full speed). Call every frame. */
-  slide(speed: number) {
+  /**
+   * Sets the slide for the rack's current speed (0 = at rest, 1 = full speed). Call every frame.
+   * `loudness` scales the level only (the ring stays the same), e.g. for quieter jumps.
+   */
+  slide(speed: number, loudness = 1) {
     const { ctx, level, contacts } = this;
     if (!ctx || !level || !contacts) return;
     const s = this.muted
@@ -140,7 +143,7 @@ export class RackSound {
       : Math.min(1, Math.max(0, (speed - SILENT_BELOW) / (1 - SILENT_BELOW)));
     const t = ctx.currentTime;
     level.gain.cancelScheduledValues(t);
-    level.gain.setTargetAtTime(VOLUME * s ** LOUDNESS_CURVE, t, RESPONSE);
+    level.gain.setTargetAtTime(VOLUME * loudness * s ** LOUDNESS_CURVE, t, RESPONSE);
     // If updates stop coming, let the sound die away rather than hang at the last level.
     level.gain.setTargetAtTime(0, t + WATCHDOG, RESPONSE);
     contacts.playbackRate.setTargetAtTime(
