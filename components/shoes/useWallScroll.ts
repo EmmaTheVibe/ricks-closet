@@ -15,6 +15,8 @@ export class WallScroll {
   private dragging = false;
   private dragStart = 0;
   private pxToMetres = 0;
+  /** Half the height the view shows at the wall, in metres (set by the camera rig). */
+  halfHeight = 0;
   private started = false;
 
   /** The lowest and highest heights the camera may look at; starts at the top of the wall. */
@@ -26,6 +28,15 @@ export class WallScroll {
       this.y = this.target = this.max;
     }
     this.target = MathUtils.clamp(this.target, this.min, this.max);
+  }
+
+  /** The whole wall fits on screen, so it doesn't scroll (phones). */
+  get fitsWhole() {
+    return this.max === this.min;
+  }
+
+  setHalfHeight(value: number) {
+    this.halfHeight = value;
   }
 
   setPxToMetres(value: number) {

@@ -51,15 +51,39 @@ const SHELVES = shelfLayout();
 // first pairs are the ones seen first. Changing the wall's size never loses a shoe.
 const SHELVES_IN_ORDER = [...SHELVES].sort((a, b) => b.y - a.y || a.x - b.x);
 
+/** A fixed shuffle (seeded), so filler shelves look random but are the same on every visit. */
+function shuffled<T>(items: T[], seed: number) {
+  const out = [...items];
+  let s = seed;
+  const next = () => ((s = (s * 16807) % 2147483647) - 1) / 2147483646;
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(next() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+/**
+ * What stands where: the catalog in order on the top shelves, then shuffled rounds of the same
+ * shoes on any shelves left over, so the wall is always full. `shoe` indexes SHOES.
+ */
+export const WALL_SLOTS = SHELVES_IN_ORDER.map((shelf, i) => {
+  const round = Math.floor(i / SHOES.length);
+  const order = round === 0 ? SHOES.map((_, k) => k) : shuffled(SHOES.map((_, k) => k), round * 7919);
+  return { shelf, shoe: order[i % SHOES.length] };
+});
+
 /** The floating shelves, in deep brown wood, and the shoes on them; the wall is the scene's plain background. */
 type ShoeWallProps = {
   view: ShoeView;
-  /** The shoe being viewed (off its shelf), or -1. */
+  /** The wall slot being viewed (its shoe off the shelf), or -1. See WALL_SLOTS. */
   viewing: number;
   onSelect: (index: number) => void;
+  /** The wall slot under the mouse, or -1. */
+  onHover: (index: number) => void;
 };
 
-export default function ShoeWall({ view, viewing, onSelect }: ShoeWallProps) {
+export default function ShoeWall({ view, viewing, onSelect, onHover }: ShoeWallProps) {
   const gl = useThree((s) => s.gl);
 
   const materials = useMemo(() => {
@@ -93,14 +117,15 @@ export default function ShoeWall({ view, viewing, onSelect }: ShoeWallProps) {
           <boxGeometry args={[shelf.length, SHELF_THICKNESS, SHELF_DEPTH]} />
         </mesh>
       ))}
-      {SHOES.map((shoe, i) => (
+      {WALL_SLOTS.map((slot, i) => (
         <ShoePair
-          key={shoe.id}
-          shoe={shoe}
-          shelf={SHELVES_IN_ORDER[i % SHELVES_IN_ORDER.length]}
+          key={i}
+          shoe={SHOES[slot.shoe]}
+          shelf={slot.shelf}
           lifted={viewing === i}
           frontRef={(group) => view.register(i, group)}
           onSelect={() => onSelect(i)}
+          onHover={(over) => onHover(over ? i : -1)}
         />
       ))}
     </group>

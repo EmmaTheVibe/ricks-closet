@@ -10,7 +10,7 @@ export const WOOD_ROUGHNESS = 0.8; // matte, like oiled wood: shinier, the tops 
 export const WALL_COLOR = "#b3aba0"; // muted warm taupe: not too bright, still light enough for the brown shelves to stand out
 
 export const COLUMNS = 3;
-export const ROWS = 2; // shelves per column
+export const ROWS = 4; // shelves per column
 export const COLUMN_PITCH = 0.45; // between column centres: a little wider than a shelf, so columns have a gap
 // Each column's height offset, as a share of SHELF_STEP: uneven, so the steps don't look machined.
 export const COLUMN_STAGGER = [0, 0.55, 0.2, 0.75];
@@ -21,7 +21,14 @@ export const SHELF_LENGTH_VARIATION = 0.04; // give or take, per shelf
 export const SHELF_NUDGE = 0.025; // and a little left or right, per shelf
 export const SHELF_DEPTH = 0.26;
 export const SHELF_THICKNESS = 0.04;
-export const WALL_TOP_MARGIN = 0.25; // wall showing above the top shelf at the top of the scroll
+// The Rick's Closet sign hangs above the top shelf, clear of the tallest boots on it; the wall shows
+// a little above the sign at the top of the scroll.
+export const SIGN_ABOVE_TOP_SHELF = 0.48; // sign centre above the top shelf
+export const SIGN_DEPTH = 0.12; // in front of the wall
+// When the whole wall fits on screen (phones), it's centred with room above: the sign rises to hang
+// this far below the top of the view instead.
+export const SIGN_TOP_GAP = 0.32;
+export const WALL_TOP_MARGIN = 0.66; // wall showing above the top shelf at the top of the scroll
 
 // Camera: standing to the right of the wall and looking across it, at this angle from straight on.
 export const VIEW_ANGLE_DEG = 10; // just off straight on, so the wall nearly faces you
@@ -39,8 +46,7 @@ export const FLICK_TIME = 0.3; // seconds of release velocity carried on after a
 export const shelvesWidth = () =>
   (COLUMNS - 1) * COLUMN_PITCH + SHELF_LENGTH + 2 * SHELF_LENGTH_VARIATION;
 
-/** Height of the top shelf, plus a margin: where scrolling up stops. */
-export const wallTop = () =>
-  FIRST_SHELF_Y +
-  (ROWS - 1 + Math.max(...COLUMN_STAGGER)) * SHELF_STEP +
-  WALL_TOP_MARGIN;
+/** Height of the top shelf. */
+export const topShelfY = () => FIRST_SHELF_Y + (ROWS - 1 + Math.max(...COLUMN_STAGGER)) * SHELF_STEP;
+/** The top shelf plus a margin (room for the sign): where scrolling up stops. */
+export const wallTop = () => topShelfY() + WALL_TOP_MARGIN;

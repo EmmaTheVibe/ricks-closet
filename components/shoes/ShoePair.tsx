@@ -13,6 +13,9 @@ const FRONT_Z = SHELF_DEPTH * 0.72; // the right shoe, nearer the viewer
 const BACK_Z = SHELF_DEPTH * 0.3; // the left shoe, against the wall
 const BACK_OFFSET = 0.07; // the back shoe sits this far toe-wards, so it shows beside the front one
 
+/** The turn about the vertical that points a model's toe along +x (with its outer side to the camera). */
+const TOE_TURN: Record<ShoeModel["toe"], number> = { "+x": 0, "-x": Math.PI, "+z": Math.PI / 2, "-z": -Math.PI / 2 };
+
 type FootProps = { model: ShoeModel; file: string; metres: number; mirrored: boolean; x?: number; z?: number };
 
 /**
@@ -34,8 +37,8 @@ function Foot({ model, file, metres, mirrored, x = 0, z = 0 }: FootProps) {
 
   return (
     <group position={[x, 0, z]} scale={[scale, scale, mirrored ? -scale : scale]}>
-      {/* Toe pointing -x in the model: turn it round. */}
-      <group rotation={[0, model.toe < 0 ? Math.PI : 0, 0]}>
+      {/* Turn the model so its toe points +x. */}
+      <group rotation={[0, TOE_TURN[model.toe], 0]}>
         <primitive object={foot.object} position={foot.centre} />
       </group>
     </group>
@@ -50,10 +53,12 @@ type ShoePairProps = {
   /** The front shoe's group, for the shoe view to move. */
   frontRef: (group: Group | null) => void;
   onSelect: () => void;
+  /** The mouse moved onto (true) or off (false) the pair. */
+  onHover: (over: boolean) => void;
 };
 
 /** One shoe design standing as a pair on its shelf: the right shoe in front, the left behind. Tap to view it. */
-export default function ShoePair({ shoe, shelf, lifted, frontRef, onSelect }: ShoePairProps) {
+export default function ShoePair({ shoe, shelf, lifted, frontRef, onSelect, onHover }: ShoePairProps) {
   const gl = useThree((s) => s.gl);
   const right = shoe.right ?? shoe.left;
   const left = shoe.left ?? shoe.right;
@@ -64,8 +69,10 @@ export default function ShoePair({ shoe, shelf, lifted, frontRef, onSelect }: Sh
     e.stopPropagation();
     onSelect();
   };
-  const pointer = (on: boolean) => () => {
+  const pointer = (on: boolean) => (e: ThreeEvent<PointerEvent>) => {
     gl.domElement.style.cursor = on ? "pointer" : "";
+    // Mouse only: on touch a tap opens the shoe, and a hover label would just flash.
+    if (!on || e.pointerType === "mouse") onHover(on);
   };
   const front = <Foot model={right} file={right.file} metres={shoe.length} mirrored={!shoe.right} />;
 

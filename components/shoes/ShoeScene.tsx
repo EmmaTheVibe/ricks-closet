@@ -3,23 +3,26 @@
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Environment } from "@react-three/drei";
-import { MathUtils, NeutralToneMapping, type PerspectiveCamera } from "three";
+import { MathUtils, NeutralToneMapping, type Group, type PerspectiveCamera } from "three";
 import { useBag } from "../rack/bag";
 import BagButton from "../rack/BagButton";
 import BagDrawer from "../rack/BagDrawer";
+import HomeLink from "../rack/HomeLink";
 import RackLoading from "../rack/RackLoading";
+import Sign from "../rack/Sign";
 // The clothes rack's lighting, shared so the two rooms of the shop always match.
 import {
   CAMERA_FOV,
   ENV_INTENSITY,
   KEY_LIGHT_COLOR,
   KEY_LIGHT_INTENSITY,
+  SIGN_Y,
 } from "../rack/constants";
-import { CAMERA_RAISE, PULL_BACK, WALL_COLOR, SHELF_DEPTH, VIEW_ANGLE_DEG, VIEW_HEIGHT, shelvesWidth, wallTop } from "./constants";
+import { CAMERA_RAISE, PULL_BACK, SIGN_ABOVE_TOP_SHELF, SIGN_DEPTH, SIGN_TOP_GAP, topShelfY, WALL_COLOR, SHELF_DEPTH, VIEW_ANGLE_DEG, VIEW_HEIGHT, shelvesWidth, wallTop } from "./constants";
 import ShoeModal from "./ShoeModal";
 import { SHOES } from "./shoes";
 import { ShoeView, SOLO_LAYER } from "./shoeView";
-import ShoeWall from "./ShoeWall";
+import ShoeWall, { WALL_SLOTS } from "./ShoeWall";
 import { useWallScroll, type WallScroll } from "./useWallScroll";
 
 const FLOOR_MARGIN = 0.06; // floor showing below the wall at the bottom of the scroll
@@ -66,6 +69,7 @@ function CameraRig({ scroll }: { scroll: WallScroll }) {
     if (highest < lowest) scroll.setBounds(wallTop() / 2, wallTop() / 2);
     else scroll.setBounds(lowest, highest);
     scroll.setPxToMetres((2 * halfHeight) / size.height);
+    scroll.setHalfHeight(halfHeight);
     scroll.step(dt);
 
     const eyeY = scroll.y + CAMERA_RAISE;
@@ -78,6 +82,22 @@ function CameraRig({ scroll }: { scroll: WallScroll }) {
 }
 
 /** Moves the viewed shoe each frame. Mount after the camera rig and the wall. */
+/** The rack's sign, hung above the top shelf, or higher up an unscrolled (phone) view. Mount after the camera rig. */
+function SignHanger({ scroll }: { scroll: WallScroll }) {
+  const group = useRef<Group>(null);
+  useFrame(() => {
+    const above = topShelfY() + SIGN_ABOVE_TOP_SHELF;
+    const nearTop = scroll.y + scroll.halfHeight - SIGN_TOP_GAP;
+    // The sign is drawn for the rack's height (SIGN_Y): offset it to ours.
+    if (group.current) group.current.position.y = (scroll.fitsWhole ? Math.max(above, nearTop) : above) - SIGN_Y;
+  });
+  return (
+    <group ref={group} position={[0, 0, SIGN_DEPTH]}>
+      <Sign />
+    </group>
+  );
+}
+
 function ViewDriver({ view }: { view: ShoeView }) {
   const [reduced] = useState(() => window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   useFrame((state, dt) => view.update(dt, reduced, state.gl, state.scene, state.camera as PerspectiveCamera));
@@ -102,8 +122,27 @@ export default function ShoeScene() {
         setViewing(-1);
       }),
   );
+  // The pair under the mouse, labelled with a pill that follows the cursor (positioned directly,
+  // not through React, as the mouse moves).
+  const [hovered, setHovered] = useState(-1);
+  const [labelled, setLabelled] = useState(-1); // the last pair hovered: the pill keeps it while fading out
+  const hover = (index: number) => {
+    setHovered(index);
+    if (index >= 0) setLabelled(index);
+  };
+  const pill = useRef<HTMLDivElement>(null);
+  const movePill = (e: React.PointerEvent<HTMLDivElement>) => {
+    const el = pill.current;
+    if (!el) return;
+    const box = e.currentTarget.getBoundingClientRect();
+    el.style.transform = `translate(${e.clientX - box.left}px, ${e.clientY - box.top}px) translate(-50%, calc(-100% - 14px))`;
+  };
+  const pillShown = mode === "closed" && hovered >= 0;
+  const labelShoe = labelled >= 0 ? SHOES[WALL_SLOTS[labelled].shoe] : null;
+
   const openView = (index: number) => {
     if (mode !== "closed" || !view.lift(index)) return;
+    setHovered(-1);
     setViewing(index);
     setMode("open");
   };
@@ -121,7 +160,7 @@ export default function ShoeScene() {
   }
 
   return (
-    <div className="relative h-full w-full">
+    <div className="relative h-full w-full" onPointerMove={movePill}>
       {/* Shoe view stacks, bottom to top: the wall frozen into a still, the modal, then the canvas
           drawing only the shoe (see shoeView.ts). The still is shown and hidden by the view. */}
       <canvas
@@ -132,9 +171,9 @@ export default function ShoeScene() {
       />
       {mode === "open" && viewing >= 0 && (
         <ShoeModal
-          shoe={SHOES[viewing]}
+          shoe={SHOES[WALL_SLOTS[viewing].shoe]}
           view={view}
-          onAdd={(size, thumbnail) => bag.add(SHOES[viewing].id, size, thumbnail)}
+          onAdd={(size, thumbnail) => bag.add(SHOES[WALL_SLOTS[viewing].shoe].id, size, thumbnail)}
           onClose={closeView}
         />
       )}
@@ -170,7 +209,8 @@ export default function ShoeScene() {
 
           <Suspense fallback={null}>
             <Environment files="/hdri/studio_small_03_1k.hdr" environmentIntensity={ENV_INTENSITY} />
-            <ShoeWall view={view} viewing={viewing} onSelect={openView} />
+            <ShoeWall view={view} viewing={viewing} onSelect={openView} onHover={hover} />
+            <SignHanger scroll={scroll} />
             <ViewDriver view={view} />
             <SceneReady onReady={markReady} />
           </Suspense>
@@ -180,8 +220,19 @@ export default function ShoeScene() {
 
       <h1 className="sr-only">Rick’s Closet: shoes</h1>
 
+      {/* Name and price of the pair under the mouse. Hidden from screen readers: the shoe view says the same. */}
+      <div
+        ref={pill}
+        aria-hidden
+        className={`pointer-events-none absolute top-0 left-0 flex items-baseline gap-2 rounded-full bg-stone-900/85 px-3 py-1 whitespace-nowrap text-white transition-opacity duration-150 ${pillShown ? "opacity-100" : "opacity-0"}`}
+      >
+        <span className="text-xs font-bold">{labelShoe?.name}</span>
+        <span className="font-mono text-[11px] text-white/75">{labelShoe?.price}</span>
+      </div>
+
       {/* The page's own controls step back while the view is up (the canvas covers them then). */}
       <div inert={mode !== "closed"} className={`transition-opacity duration-300 ${mode === "closed" ? "" : "opacity-0"}`}>
+        <HomeLink />
         <BagButton count={bag.count} onOpen={() => setBagOpen(true)} />
       </div>
       {bagOpen && <BagDrawer bag={bag} onClose={() => setBagOpen(false)} />}
