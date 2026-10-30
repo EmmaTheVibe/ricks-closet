@@ -174,6 +174,7 @@ export default function WatchModal({
                 <img
                   ref={picture}
                   src={watch.image}
+                  crossOrigin="anonymous"
                   alt={`${watch.name}, on the wrist`}
                   className="absolute top-(--wrist-top-sm) max-w-none drop-shadow-[0_6px_6px_rgba(0,0,0,0.45)] md:top-(--wrist-top)"
                   style={{

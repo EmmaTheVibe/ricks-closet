@@ -35,6 +35,7 @@ export class WatchView {
   private entry: WatchEntry | null = null;
   private readonly rest = new Vector3();
   private restScale = 1;
+  private aimed = false;
   private progress = 0;
   private lifting = false;
   private opacity = 1;
@@ -72,6 +73,7 @@ export class WatchView {
     this.opacity = this.fadeTo = 1;
     this.pendingFreeze = true;
     this.pendingSolo = false;
+    this.aimed = false;
     this.restScale = entry.mesh.scale.x;
     return true;
   }
@@ -115,7 +117,7 @@ export class WatchView {
       covered();
     }
 
-    const step = instant ? 1 : dt / LIFT_TIME;
+    const step = this.lifting && !this.aimed ? 0 : instant ? 1 : dt / LIFT_TIME;
     this.progress = MathUtils.clamp(this.progress + (this.lifting ? step : -step), 0, 1);
     if (!this.lifting && !this.onCovered && this.progress === 0) {
       this.place(entry, 0);
@@ -151,6 +153,7 @@ export class WatchView {
 
   private aim(box: DOMRect, camera: PerspectiveCamera, canvas: HTMLElement) {
     const c = canvas.getBoundingClientRect();
+    this.aimed = true;
     this.crop = { x: box.left - c.left, y: box.top - c.top, w: box.width, h: box.height, cw: c.width, ch: c.height };
     const x = box.left + box.width / 2 - c.left;
     const y = box.top + box.height / 2 - c.top;
