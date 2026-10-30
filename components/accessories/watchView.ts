@@ -34,16 +34,19 @@ export class WatchView {
   private readonly entries = new Map<number, WatchEntry>();
   private entry: WatchEntry | null = null;
   private readonly rest = new Vector3();
+  private restScale = 1;
   private progress = 0;
   private lifting = false;
   private opacity = 1;
   private fadeTo = 1;
   private onCovered: (() => void) | null = null;
   private box: DOMRect | null = null;
+  private target: (() => DOMRect) | null = null;
   private crop: { x: number; y: number; w: number; h: number; cw: number; ch: number } | null = null;
   private readonly goal = { position: new Vector3(), quat: new Quaternion(), scale: 1 };
   private onArrive: ((capture: HTMLCanvasElement | null) => void) | null = null;
   private pendingFreeze = false;
+  private pendingSolo = false;
   private snapshot: HTMLCanvasElement | null = null;
   private solo: { background: Scene["background"] } | null = null;
 
@@ -68,11 +71,13 @@ export class WatchView {
     this.lifting = true;
     this.opacity = this.fadeTo = 1;
     this.pendingFreeze = true;
+    this.pendingSolo = false;
+    this.restScale = entry.mesh.scale.x;
     return true;
   }
 
-  flyTo = (box: DOMRect, onArrive: (capture: HTMLCanvasElement | null) => void) => {
-    this.box = box;
+  flyTo = (target: () => DOMRect, onArrive: (capture: HTMLCanvasElement | null) => void) => {
+    this.target = target;
     this.onArrive = onArrive;
   };
 
@@ -82,6 +87,7 @@ export class WatchView {
 
   putBack = (box: DOMRect | null, onCovered: () => void) => {
     if (box) this.box = box;
+    this.target = null;
     this.fadeTo = 1;
     this.onCovered = onCovered;
     this.onArrive = null;
@@ -91,8 +97,10 @@ export class WatchView {
     const entry = this.entry;
     if (this.index < 0 || !entry) return;
     const { mesh } = entry;
+    if (this.pendingSolo) this.goSolo(scene, camera, mesh);
     if (this.pendingFreeze) this.freeze(gl, scene, camera, mesh);
-    if (this.box) {
+    if (this.target) this.aim(this.target(), camera, gl.domElement);
+    else if (this.box) {
       this.aim(this.box, camera, gl.domElement);
       this.box = null;
     }
@@ -115,9 +123,10 @@ export class WatchView {
       return;
     }
     this.place(entry, this.progress);
-    if (this.lifting && this.progress === 1 && this.onArrive) {
+    if (this.lifting && this.progress === 1 && this.onArrive && !this.pendingSolo) {
       const arrive = this.onArrive;
       this.onArrive = null;
+      this.target = null;
       arrive(this.capture(gl, scene, camera));
     }
   }
@@ -137,7 +146,7 @@ export class WatchView {
     const across = MathUtils.smoothstep(progress, 0.15, 1);
     mesh.position.lerpVectors(this.rest, this.goal.position, across);
     mesh.quaternion.slerpQuaternions(identity, this.goal.quat, across);
-    mesh.scale.setScalar(MathUtils.lerp(1, this.goal.scale, across));
+    mesh.scale.setScalar(MathUtils.lerp(this.restScale, this.goal.scale, across));
   }
 
   private aim(box: DOMRect, camera: PerspectiveCamera, canvas: HTMLElement) {
@@ -179,6 +188,11 @@ export class WatchView {
     still.getContext("2d")?.drawImage(gl.domElement, 0, 0);
     still.style.display = "block";
     mesh.visible = true;
+    this.pendingSolo = true;
+  }
+
+  private goSolo(scene: Scene, camera: PerspectiveCamera, mesh: Mesh) {
+    this.pendingSolo = false;
     mesh.layers.enable(SOLO_LAYER);
     this.solo = { background: scene.background };
     scene.background = null;

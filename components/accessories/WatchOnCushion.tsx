@@ -3,7 +3,7 @@ import { useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { useTexture } from "@react-three/drei";
 import { BufferAttribute, DoubleSide, PlaneGeometry, SRGBColorSpace, type Mesh, type Texture } from "three";
 import { CLICK_SLOP_PX } from "../rack/constants";
-import { CUSHION_DEPTH, CUSHION_HEIGHT, CUSHION_RADIUS, CUSHION_TOP } from "./constants";
+import { CUSHION_DEPTH, CUSHION_HEIGHT, CUSHION_RADIUS, CUSHION_TOP, WATCH_DISPLAY_SCALE } from "./constants";
 import { ARM } from "./watches";
 import type { WatchView } from "./watchView";
 import type { WatchConfig } from "./watches";
@@ -58,6 +58,7 @@ export default function WatchOnCushion({ watch, index, x, z, view, onSelect, onH
     const bent = shape();
     const flat = shape();
     const wrist = shape();
+    const s = WATCH_DISPLAY_SCALE;
     const cushionTop = CUSHION_DEPTH / 2 - CUSHION_RADIUS;
     const wristScale = (WRIST_REACH * ARM.wristMetres) / 2 / (cushionTop + CUSHION_RADIUS);
     const wristTop = cushionTop * wristScale;
@@ -66,11 +67,12 @@ export default function WatchOnCushion({ watch, index, x, z, view, onSelect, onH
       const across = position.getX(i);
       const along = position.getY(i);
       const side = along > 0 ? -1 : 1;
-      const onCushion = along - WATCH_SLIDE;
+      const onCushion = along - WATCH_SLIDE / s;
       const cushionSide = onCushion > 0 ? -1 : 1;
-      const c = wrap(onCushion, cushionTop, CUSHION_RADIUS, Math.max(0, CUSHION_HEIGHT - 2 * CUSHION_RADIUS));
+      const c = wrap(onCushion, cushionTop / s, CUSHION_RADIUS / s, Math.max(0, CUSHION_HEIGHT - 2 * CUSHION_RADIUS) / s);
       const w = wrap(along, wristTop, wristRadius);
-      bent.position.set([across, c.dy + LIFT * Math.cos(c.turn), cushionSide * (c.dz + LIFT * Math.sin(c.turn))], i * 3);
+      const lift = LIFT / s;
+      bent.position.set([across, c.dy + lift * Math.cos(c.turn), cushionSide * (c.dz + lift * Math.sin(c.turn))], i * 3);
       flat.position.set([across, LIFT, -along], i * 3);
       wrist.position.set([across, w.dy + LIFT * Math.cos(w.turn), side * (w.dz + LIFT * Math.sin(w.turn))], i * 3);
       const shade = (amount: number, turn: number) => Math.max(0, 1 - amount * (turn / (Math.PI / 2)));
@@ -118,6 +120,7 @@ export default function WatchOnCushion({ watch, index, x, z, view, onSelect, onH
       }}
       geometry={shapes.geometry}
       position={[x, CUSHION_TOP, z]}
+      scale={WATCH_DISPLAY_SCALE}
       onClick={tap}
       onPointerOver={pointer(true)}
       onPointerOut={pointer(false)}

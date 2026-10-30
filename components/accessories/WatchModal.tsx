@@ -47,7 +47,7 @@ export default function WatchModal({
       [img, armPicture.current].map((el) => el?.decode().catch(() => {})),
     ).then(() => {
       if (cancelled || !img) return;
-      view.flyTo(img.getBoundingClientRect(), (settled) => {
+      view.flyTo(() => img.getBoundingClientRect(), (settled) => {
         setCapture(settled);
         setOnWrist(true);
         setArmShown(true);

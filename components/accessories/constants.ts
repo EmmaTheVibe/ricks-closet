@@ -17,6 +17,7 @@ export const CUSHION_WIDTH = COMPARTMENT.width * 0.86;
 export const CUSHION_DEPTH = COMPARTMENT.depth * 0.62;
 export const CUSHION_RADIUS = 0.015;
 export const CUSHION_TOP = FRAME_HEIGHT + 0.001;
+export const WATCH_DISPLAY_SCALE = 1.2;
 export const CASE_THICKNESS = 0.012;
 export const LID_THICKNESS = 0.045;
 export const LID_PLATE = 0.008;
