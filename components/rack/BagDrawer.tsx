@@ -1,20 +1,16 @@
 import { useEffect, useRef, useState } from "react";
+import { HoverIcon, ICONS, SPRING } from "../ui/hover";
 import { formatNaira, type Bag } from "./bag";
 import BagItem from "./BagItem";
 import { SIGN_INK, SIGN_PAPER } from "./constants";
 
-const CONFIRM_MS = 3000; // how long "Tap again to clear" waits for the second tap
+const CONFIRM_MS = 3000;
+const SLIDE_MS = 300;
 
 type BagDrawerProps = { bag: Bag; onClose: () => void };
 
-/**
- * The bag, sliding in from the right: a kraft header in the sign's lettering, the items, the
- * subtotal and Checkout (not wired to anything yet). A native modal dialog: focus stays inside,
- * Escape closes it, and the rack behind can't be dragged. Mounted only while open.
- */
 export default function BagDrawer({ bag, onClose }: BagDrawerProps) {
   const dialog = useRef<HTMLDialogElement>(null);
-  // Clearing takes a second tap, so one slip doesn't empty the bag.
   const [confirmClear, setConfirmClear] = useState(false);
   useEffect(() => {
     if (!confirmClear) return;
@@ -22,23 +18,39 @@ export default function BagDrawer({ bag, onClose }: BagDrawerProps) {
     return () => window.clearTimeout(timer);
   }, [confirmClear]);
 
-  // No close() on cleanup: its async close event would close the remount in Strict Mode, and an
-  // unmounted dialog leaves the top layer anyway.
+  const [shown, setShown] = useState(false);
+  const closing = useRef(false);
+
   useEffect(() => {
-    if (dialog.current && !dialog.current.open) dialog.current.showModal();
+    const el = dialog.current;
+    if (!el) return;
+    if (!el.open) el.showModal();
+    el.getBoundingClientRect();
+    const frame = requestAnimationFrame(() => setShown(true));
+    return () => cancelAnimationFrame(frame);
   }, []);
+
+  const close = () => {
+    if (closing.current) return;
+    closing.current = true;
+    setShown(false);
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.setTimeout(() => dialog.current?.close(), reduced ? 0 : SLIDE_MS);
+  };
 
   return (
     <dialog
       ref={dialog}
       aria-labelledby="bag-title"
       onClose={onClose}
-      onClick={(e) => e.target === e.currentTarget && dialog.current?.close()}
-      // A modal dialog is centred by default: pin it to the right edge, full height.
-      className="my-0 mr-0 ml-auto h-dvh max-h-none w-[min(26rem,100%)] max-w-none bg-white p-0 text-stone-900 shadow-2xl transition-[translate] duration-300 ease-out backdrop:bg-stone-900/40 backdrop:transition-colors backdrop:duration-300 starting:translate-x-full starting:backdrop:bg-transparent motion-reduce:transition-none"
+      onCancel={(e) => {
+        e.preventDefault();
+        close();
+      }}
+      onClick={(e) => e.target === e.currentTarget && close()}
+      className={`my-0 mr-0 ml-auto h-dvh max-h-none w-[min(26rem,100%)] max-w-none bg-white p-0 text-stone-900 shadow-2xl transition-[translate] duration-300 backdrop:transition-colors backdrop:duration-300 motion-reduce:transition-none ${shown ? "translate-x-0 ease-out backdrop:bg-stone-900/40" : "translate-x-full ease-in backdrop:bg-transparent"}`}
     >
       <div className="flex h-full flex-col">
-        {/* The sign, as a header: "RICK'S" tracked out, "Closet" in italic serif, on kraft. */}
         <header
           className="flex items-center gap-3 px-6 pt-[max(1.25rem,env(safe-area-inset-top))] pb-5"
           style={{ background: SIGN_PAPER, color: SIGN_INK }}
@@ -53,9 +65,9 @@ export default function BagDrawer({ bag, onClose }: BagDrawerProps) {
           <span className="ml-auto text-xs font-bold tracking-[0.2em] uppercase opacity-70">Bag</span>
           <button
             type="button"
-            onClick={() => dialog.current?.close()}
+            onClick={close}
             aria-label="Close bag"
-            className="grid size-10 place-items-center rounded-full text-xl transition hover:bg-black/10 focus-visible:outline-2 focus-visible:outline-current"
+            className="grid size-10 place-items-center rounded-full text-xl transition-[rotate,background-color] duration-300 ease-[cubic-bezier(0.34,1.2,0.64,1)] hover:rotate-90 hover:bg-black/10 focus-visible:outline-2 focus-visible:outline-current motion-reduce:hover:rotate-0"
           >
             ×
           </button>
@@ -86,13 +98,13 @@ export default function BagDrawer({ bag, onClose }: BagDrawerProps) {
                   bag.clear();
                   setConfirmClear(false);
                 }}
-                // A pill like the bag's other controls; armed, it fills in like a picked size.
-                className={`rounded-full border px-3 py-1.5 text-xs font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900 ${
+                className={`flex items-center rounded-full border px-3 py-1.5 text-xs font-bold ${SPRING} focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900 ${
                   confirmClear
                     ? "border-stone-900 bg-stone-900 text-white"
                     : "border-stone-900/20 text-stone-700 hover:border-stone-900/50"
                 }`}
               >
+                <HoverIcon>{ICONS.trash}</HoverIcon>
                 {confirmClear ? "Tap again to clear" : "Clear bag"}
               </button>
             </div>
@@ -104,8 +116,9 @@ export default function BagDrawer({ bag, onClose }: BagDrawerProps) {
           <button
             type="button"
             disabled={bag.lines.length === 0}
-            className="mt-4 w-full rounded-full bg-stone-900 py-3 text-sm font-bold text-white transition hover:bg-stone-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900 disabled:cursor-not-allowed disabled:bg-stone-900/25"
+            className={`mt-4 flex w-full items-center justify-center rounded-full bg-stone-900 py-3 text-sm font-bold text-white ${SPRING} hover:bg-stone-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900 disabled:cursor-not-allowed disabled:bg-stone-900/25`}
           >
+            <HoverIcon>{ICONS.arrow}</HoverIcon>
             Checkout
           </button>
         </footer>

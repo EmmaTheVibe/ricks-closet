@@ -1,10 +1,4 @@
-// Garment config. To use real shirts, run `npm run prepare-shirt` on a cut-out image and edit this list,
-// then paint the wooden hanger into a shirt's images with scripts/paint-hanger.mjs. Full-size
-// cut-outs are kept in assets/shirts/, outside public/, so they aren't deployed.
-
-/** Shirts hang from a wooden hanger by the shoulders; pants from a clip hanger by the waistband. */
 export type GarmentKind = "shirt" | "pants";
-/** Anything sold in sizes: garments, and shoes (EU sizes). */
 export type SizedKind = GarmentKind | "shoes";
 
 export type ShirtConfig = {
@@ -12,10 +6,10 @@ export type ShirtConfig = {
   name: string;
   price: string;
   texture: string;
-  kind?: GarmentKind; // default "shirt"
-  side?: string; // side-profile image (front facing left), shown when the garment is turned away
-  sideLeft?: string; // optional version for the left of the rack (mirrored there), for asymmetric garments
-  soldOut?: string[]; // sizes out of stock, e.g. ["XS", "XXL"]: shown crossed out, can't be picked
+  kind?: GarmentKind;
+  side?: string;
+  sideLeft?: string;
+  soldOut?: string[];
 };
 
 export const SHIRTS: ShirtConfig[] = [
@@ -33,11 +27,10 @@ export const SHIRTS: ShirtConfig[] = [
   { id: "focus-polo", name: "Focus Polo", price: "₦87,000", texture: "/shirts/focus-polo.webp", side: "/shirts/focus-polo-side.webp", sideLeft: "/shirts/focus-polo-side-left.webp" },
 ];
 
-/** Sizes offered in the product view: letter sizes for shirts, waist sizes (inches) for pants. */
 export const SIZES: Record<SizedKind, string[]> = {
   shirt: ["XS", "S", "M", "L", "XL", "XXL"],
   pants: ["28", "30", "32", "34", "36", "38"],
-  shoes: ["40", "41", "42", "43", "44", "45", "46"], // EU
+  shoes: ["40", "41", "42", "43", "44", "45", "46"],
 };
 
 export const INITIAL_INDEX = Math.floor((SHIRTS.length - 1) / 2);

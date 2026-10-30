@@ -7,16 +7,14 @@ import Shirt from "./Shirt";
 import type { ShirtSurface } from "./shirtSurface";
 import { SIDE_VIEW_ROWS, type SideViewAssets } from "./sideView";
 
-/** The objects in one slot that the rack's frame loop moves and updates. */
 export type SlotRefs = {
-  slot: Group | null; // slides along the rail
-  body: Group | null; // turns with the garment
-  front: Mesh | null; // the 3D cloth front
+  slot: Group | null;
+  body: Group | null;
+  front: Mesh | null;
   shadow: Mesh | null;
   sideView: Mesh | null;
 };
 
-/** World height of the floor shadows: just above the floor. */
 export const FLOOR_Y = 0.002;
 
 export const emptySlotRefs = (): SlotRefs => ({
@@ -43,7 +41,6 @@ type RackSlotProps = {
   onSelect: () => void;
 };
 
-/** One garment on the rail: hook, side view, hanger, floor shadow and the shirt itself. */
 export default function RackSlot({
   index,
   slots,

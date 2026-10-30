@@ -1,7 +1,7 @@
 import { useState } from "react";
+import { SPRING, WIGGLE } from "../ui/hover";
 import type { RackSound } from "./rackSound";
 
-/** Mutes or unmutes the rack's sounds; the choice is remembered on this device. */
 export default function SoundToggle({ sound }: { sound: RackSound }) {
   const [muted, setMuted] = useState(sound.muted);
 
@@ -17,9 +17,9 @@ export default function SoundToggle({ sound }: { sound: RackSound }) {
       onClick={toggle}
       aria-pressed={!muted}
       aria-label="Sound"
-      className="absolute top-[max(1rem,env(safe-area-inset-top))] right-[calc(max(1rem,env(safe-area-inset-right))+3rem)] grid size-10 place-items-center rounded-full border border-stone-900/15 text-stone-800 transition hover:bg-stone-900/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900"
+      className={`absolute top-[max(1rem,env(safe-area-inset-top))] right-[calc(max(1rem,env(safe-area-inset-right))+3rem)] grid size-10 place-items-center rounded-full bg-[#f7f4ef]/85 text-stone-900 shadow-md ring-1 ring-stone-900/10 backdrop-blur-md ${SPRING} hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900`}
     >
-      <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <svg viewBox="0 0 24 24" className={`size-5 ${WIGGLE}`} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
         <path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor" stroke="none" />
         {muted ? (
           <path d="M16 9.5l5 5m0-5l-5 5" />

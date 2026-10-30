@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { HoverIcon, ICONS, SPRING } from "../ui/hover";
 import BagDrop from "./BagDrop";
 import GarmentViews from "./GarmentViews";
 import type { Capture, PullOff } from "./pullOff";
@@ -6,39 +7,27 @@ import SizeGuide from "./SizeGuide";
 import SizePicker from "./SizePicker";
 import { SIZES, type ShirtConfig } from "./shirts";
 
-const FADE_MS = 300; // the dim and panel fading in and out
-const ADDED_MS = 1600; // how long the button says "Added to bag"
+const FADE_MS = 300;
+const ADDED_MS = 1600;
 
 type GarmentModalProps = { shirt: ShirtConfig; pullOff: PullOff; onAdd: (size: string) => void; onClose: () => void };
 
-/**
- * Product view: still images of each side, sizes, price and Add to bag (the garment drops into a
- * Rick's Closet bag, on a layer of its own: see BagDrop.tsx). Not a native <dialog>: those
- * always draw above the page, and the View trick needs the 3D canvas (with the flying shirt)
- * stacked above this. So Escape and focus are handled here, and the scene makes the rest of the
- * page inert while it's open.
- *
- * The trick (see pullOff.ts): the dim and panel fade in under the flying shirt, which lands on the
- * large image's spot. The image stays hidden until the shirt rests, then takes over from it.
- * Closing runs it backwards: the shirt reappears over the image, then the modal fades out under it.
- */
 export default function GarmentModal({ shirt, pullOff, onAdd, onClose }: GarmentModalProps) {
   const mainView = useRef<HTMLDivElement>(null);
-  const captures = useRef<Capture[]>([]); // each view's canvas, drawn by the rack
-  const [drawn, setDrawn] = useState<boolean[]>([]); // which views show the garment as lit on the rack
+  const captures = useRef<Capture[]>([]);
+  const [drawn, setDrawn] = useState<boolean[]>([]);
   const closeButton = useRef<HTMLButtonElement>(null);
   const [size, setSize] = useState<string | null>(null);
-  const [added, setAdded] = useState(false); // briefly confirms "Added to bag"
+  const [added, setAdded] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
-  // The size going into the bag, and the front to drop (as lit on the rack, if it was captured).
   const [dropping, setDropping] = useState<{ size: string; source?: HTMLCanvasElement } | null>(null);
   useEffect(() => {
     if (!added) return;
     const timer = window.setTimeout(() => setAdded(false), ADDED_MS);
     return () => window.clearTimeout(timer);
   }, [added]);
-  const [shown, setShown] = useState(false); // the dim and panel
-  const [imageShown, setImageShown] = useState(false); // the large image, under the 3D shirt
+  const [shown, setShown] = useState(false);
+  const [imageShown, setImageShown] = useState(false);
   const closing = useRef(false);
 
   useEffect(() => {
@@ -49,12 +38,10 @@ export default function GarmentModal({ shirt, pullOff, onAdd, onClose }: Garment
         setImageShown(true);
       });
     }
-    // A frame at opacity 0 first, so the fade-in runs.
     const frame = requestAnimationFrame(() => setShown(true));
     return () => cancelAnimationFrame(frame);
   }, [pullOff]);
 
-  // The image is on screen (this runs after it's painted): the 3D shirt above it can go.
   useEffect(() => {
     if (imageShown) pullOff.hide();
   }, [imageShown, pullOff]);
@@ -63,7 +50,6 @@ export default function GarmentModal({ shirt, pullOff, onAdd, onClose }: Garment
     if (closing.current) return;
     closing.current = true;
     if (mainView.current) pullOff.unhide(mainView.current.getBoundingClientRect());
-    // Two frames, so the 3D shirt is drawn over the image again before the image goes.
     requestAnimationFrame(() =>
       requestAnimationFrame(() => {
         setImageShown(false);
@@ -76,7 +62,6 @@ export default function GarmentModal({ shirt, pullOff, onAdd, onClose }: Garment
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      // Escape belongs to the bag drawer if it's open over this; and waits for a drop to finish.
       if (e.key === "Escape" && !dropping && !document.querySelector("dialog[open]")) close();
     };
     window.addEventListener("keydown", onKey);
@@ -88,7 +73,6 @@ export default function GarmentModal({ shirt, pullOff, onAdd, onClose }: Garment
       role="dialog"
       aria-modal="true"
       aria-labelledby="garment-name"
-      // A click on the dim (outside the panel) closes it.
       onClick={(e) => e.target === e.currentTarget && close()}
       className={`fixed inset-0 grid place-items-center p-4 transition-colors duration-300 motion-reduce:transition-none ${shown ? "bg-stone-900/40" : "bg-transparent"}`}
     >
@@ -106,7 +90,6 @@ export default function GarmentModal({ shirt, pullOff, onAdd, onClose }: Garment
       <div
         className={`relative max-h-[calc(100dvh-2rem)] w-[min(52rem,100%)] overflow-y-auto rounded-3xl bg-white text-stone-900 shadow-2xl transition-opacity duration-300 motion-reduce:transition-none ${shown ? "opacity-100" : "opacity-0"}`}
       >
-        {/* minmax(0, 1fr): a wide child can never stretch a column past the panel. */}
         <div className="grid grid-cols-[minmax(0,1fr)] md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
           <GarmentViews
             shirt={shirt}
@@ -149,8 +132,9 @@ export default function GarmentModal({ shirt, pullOff, onAdd, onClose }: Garment
                 type="button"
                 disabled={!size || dropping !== null}
                 onClick={() => size && setDropping({ size, source: drawn[0] ? captures.current[0]?.canvas : undefined })}
-                className="w-full rounded-full bg-stone-900 py-3 text-sm font-bold text-white transition hover:bg-stone-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900 disabled:cursor-not-allowed disabled:bg-stone-900/25"
+                className={`flex w-full items-center justify-center rounded-full bg-stone-900 py-3 text-sm font-bold text-white ${SPRING} hover:bg-stone-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900 disabled:cursor-not-allowed disabled:bg-stone-900/25`}
               >
+                <HoverIcon>{ICONS.bagPlus}</HoverIcon>
                 {added ? "Added to bag ✓" : "Add to bag"}
               </button>
               <p className="mt-2 h-4 text-center text-xs text-stone-500" aria-live="polite">
@@ -165,7 +149,7 @@ export default function GarmentModal({ shirt, pullOff, onAdd, onClose }: Garment
           type="button"
           onClick={close}
           aria-label="Close"
-          className="absolute top-4 right-4 grid size-10 place-items-center rounded-full text-xl text-stone-700 transition hover:bg-stone-900/5 focus-visible:outline-2 focus-visible:outline-stone-900"
+          className="absolute top-4 right-4 grid size-10 place-items-center rounded-full text-xl text-stone-700 transition-[rotate,background-color] duration-300 ease-[cubic-bezier(0.34,1.2,0.64,1)] hover:rotate-90 hover:bg-stone-900/5 motion-reduce:hover:rotate-0 focus-visible:outline-2 focus-visible:outline-stone-900"
         >
           ×
         </button>

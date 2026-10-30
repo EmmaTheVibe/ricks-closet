@@ -17,24 +17,19 @@ type ShirtProps = {
   surface: ShirtSurface;
   texture: Texture;
   weave: Texture;
-  /** Per-garment front opacity, written by the rack each frame (1 = fully shown). */
   fades: RefObject<number[]>;
   index: number;
-  /** Has a side-view photo: stays in blended mode so fading never recompiles shaders mid-move. */
   crossfades: boolean;
   onSelect: () => void;
 };
 
-/** One shirt: front and back panels around a cloth-simulated (or static) mid-sheet. */
 export default function Shirt({ ref, surface, texture, weave, fades, index, crossfades, onSelect }: ShirtProps) {
-  // Shadows follow the cut-out silhouette instead of the full rectangle.
   const depthMaterial = useMemo(
     () => new MeshDepthMaterial({ depthPacking: RGBADepthPacking, map: texture, alphaTest: 0.5 }),
     [texture],
   );
   useEffect(() => () => depthMaterial.dispose(), [depthMaterial]);
 
-  // Fades out while a side-view photo takes over (only garments that have one).
   const group = useRef<Group>(null);
   const frontMaterial = useRef<MeshPhysicalMaterial>(null);
   const backMaterial = useRef<MeshPhysicalMaterial>(null);
@@ -58,8 +53,6 @@ export default function Shirt({ ref, surface, texture, weave, fades, index, cros
     onSelect();
   };
 
-  // Along the outline both panels are the same surface; the back one is drawn a hair behind so
-  // they don't flicker against each other there.
   const material = (behind: boolean) => (
     <meshPhysicalMaterial
       ref={behind ? backMaterial : frontMaterial}

@@ -27,10 +27,8 @@ function pickGrid() {
     : { cols: GRID_COLS, rows: GRID_ROWS };
 }
 
-// Side-profile photos, for the garments that have them (static list).
 const SIDE_URLS = SHIRTS.flatMap((s) => [s.side, s.sideLeft].filter((u): u is string => Boolean(u)));
 
-/** Loads every garment's textures and builds what each one needs to render; disposes on unmount. */
 export function useGarmentAssets() {
   const gl = useThree((s) => s.gl);
   const anisotropy = gl.capabilities.getMaxAnisotropy();
@@ -55,11 +53,9 @@ export function useGarmentAssets() {
         const material = new MeshStandardMaterial({
           map: photos.right,
           alphaTest: 0.5,
-          side: DoubleSide, // mirrored for garments left of center
+          side: DoubleSide,
           transparent: true,
           roughness: 0.85,
-          // Drawn before the 3D front and never occludes it: the front fades over the photo
-          // instead of the two fighting over depth as the shirt turns.
           depthWrite: false,
         });
         return { material, photo: photos };

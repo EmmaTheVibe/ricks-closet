@@ -4,19 +4,16 @@ import type { ReactNode } from "react";
 
 type CategoryTileProps = {
   name: string;
-  /** The room's route; none while it's still to come. */
   href?: string;
   background: string;
-  /** A product image (transparent WebP), or an icon for a room that's coming. */
   image?: { src: string; width: number; height: number };
   icon?: ReactNode;
+  wide?: boolean;
 };
 
-/** One room of the shop on the welcome card: a picture, its name, and a way in (or "Coming soon"). */
-export default function CategoryTile({ name, href, background, image, icon }: CategoryTileProps) {
+export default function CategoryTile({ name, href, background, image, icon, wide = false }: CategoryTileProps) {
   const body = (
     <>
-      {/* Centred in the space above the label, and never bigger than it (min-h-0 lets it shrink). */}
       <div className="flex min-h-0 flex-1 items-center justify-center p-5">
         {image ? (
           <Image
@@ -37,7 +34,7 @@ export default function CategoryTile({ name, href, background, image, icon }: Ca
       </div>
     </>
   );
-  const tile = "group flex aspect-[4/5] flex-col overflow-hidden rounded-2xl";
+  const tile = `group flex ${wide ? "aspect-[2/1] sm:aspect-[5/2]" : "aspect-[4/5]"} flex-col overflow-hidden rounded-2xl`;
 
   return href ? (
     <Link

@@ -7,19 +7,11 @@ function createPanel(cols: number, rows: number) {
   const centerY = -HANGER_DROP - SHIRT_HEIGHT / 2;
   geometry.translate(0, centerY, 0);
   (geometry.getAttribute("position") as BufferAttribute).setUsage(DynamicDrawUsage);
-  // The cloth stays near its rest plane, so a generous fixed bound avoids recomputing it per frame.
   geometry.boundingSphere = new Sphere(new Vector3(0, centerY, 0), Math.hypot(SHIRT_WIDTH, SHIRT_HEIGHT) / 2 + 0.3);
   return geometry;
 }
 
-/**
- * Half the front-to-back gap at each grid vertex. Every vertex of a grid cell that the outline
- * passes through gets zero, so wherever the shirt's edge is drawn the two panels are the same
- * surface and can't come apart however the cloth bends. Further in, the gap rounds up with the
- * distance to the outline, and thins toward the hem.
- */
 function panelOffsets(cols: number, rows: number, mask: AlphaMask) {
-  // Transparent pixels touching opaque ones: just outside the outline.
   const outline: number[] = [];
   const opaque = (x: number, y: number) =>
     x >= 0 && y >= 0 && x < mask.width && y < mask.height && mask.data[y * mask.width + x] >= 128;
@@ -54,21 +46,16 @@ function panelOffsets(cols: number, rows: number, mask: AlphaMask) {
   return offsets;
 }
 
-/**
- * One shirt's surfaces. The cloth sim drives `mid`, a single sheet that is never drawn; the
- * visible `front` and `back` panels are pushed apart from it along its normals so the shirt has
- * volume and closes up at its outline.
- */
 export class ShirtSurface {
   readonly mid: PlaneGeometry;
   readonly front: PlaneGeometry;
   readonly back: PlaneGeometry;
-  readonly rest: Float32Array; // flat mid-sheet pose
+  readonly rest: Float32Array;
   private offsets: Float32Array;
-  private hem: number[]; // fabric vertices in the lower part of the shirt
-  readonly hemShift = { x: 0, z: 0 }; // how far the hem has swung from rest, hanger-local
-  private hemEdge: number[]; // lowest fabric vertex in each column: the hem line itself
-  readonly hemTip = { x: 0, z: 0 }; // how far the hem line itself has swung (moves more than hemShift)
+  private hem: number[];
+  readonly hemShift = { x: 0, z: 0 };
+  private hemEdge: number[];
+  readonly hemTip = { x: 0, z: 0 };
 
   constructor(cols: number, rows: number, mask: AlphaMask) {
     this.mid = createPanel(cols, rows);
@@ -90,7 +77,6 @@ export class ShirtSurface {
     this.inflate();
   }
 
-  /** Current mid-sheet pose, hanger-local. */
   get positions() {
     return this.mid.getAttribute("position").array as Float32Array;
   }

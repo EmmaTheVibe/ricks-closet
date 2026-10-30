@@ -1,12 +1,9 @@
-// Size guide: standard menswear sizing (UK/US/EU equivalents and body measurements). Edit these to
-// the brand's own measurements; centimetres are the source, inches are worked out from them.
 import type { SizedKind } from "./shirts";
 
-/** A measurement in centimetres: one value, or a [from, to] range. */
 type Cm = number | [number, number];
 
 export type SizeGuide = {
-  measures: string[]; // column names for the measurements, in order
+  measures: string[];
   rows: { size: string; uk: string; us: string; eu: string; cm: Cm[] }[];
   note: string;
 };
@@ -51,7 +48,6 @@ export const SIZE_GUIDES: Record<SizedKind, SizeGuide> = {
   },
 };
 
-/** A measurement for display, in cm or inches (to the nearest half inch). */
 export function formatMeasure(cm: Cm, unit: "cm" | "in") {
   const one = (v: number) => (unit === "cm" ? String(v) : String(Math.round((v / 2.54) * 2) / 2));
   return Array.isArray(cm) ? `${one(cm[0])}–${one(cm[1])}` : one(cm);

@@ -3,15 +3,10 @@ import { BACKGROUND } from "./constants";
 import GarmentImage from "./GarmentImage";
 import type { ShirtConfig } from "./shirts";
 
-/** What a view shows, as the rack draws it: the cloth front, or the side photo as is or mirrored. */
 export type ViewKind = "front" | "side" | "sideMirrored";
 
 type View = { label: string; kind: ViewKind; src: string; hook: "front" | "side" | null; mirror: boolean };
 
-/**
- * The still views of a garment. Side photos are stored front-facing-left: as is, that shows the
- * wearer's left side; mirrored (as on the rack's left), the wearer's right. Pants show the front only.
- */
 function viewsFor(shirt: ShirtConfig): View[] {
   const pants = shirt.kind === "pants";
   const views: View[] = [{ label: "Front", kind: "front", src: shirt.texture, hook: pants ? null : "front", mirror: false }];
@@ -22,31 +17,22 @@ function viewsFor(shirt: ShirtConfig): View[] {
   return views;
 }
 
-const THUMB_SHRINK = 4; // thumbnails are drawn from the large captures at a quarter size
+const THUMB_SHRINK = 4;
 
 type GarmentViewsProps = {
   shirt: ShirtConfig;
-  /** The large view's box: where the View trick flies the 3D shirt to. */
   mainRef?: Ref<HTMLDivElement>;
-  /** Hide the large view (the 3D shirt is standing in for it). */
   hideMain?: boolean;
-  /** Each view's canvas, for the View trick to draw the garment into as lit on the rack. */
   onCaptureCanvas?: (index: number, kind: ViewKind, canvas: HTMLCanvasElement | null) => void;
-  /** Which views' captures have been drawn; those show instead of the flat photos. */
   drawn?: boolean[];
 };
 
-/**
- * Product images: the selected view large, with a thumbnail to pick each view. Each view shows
- * the garment as lit on the rack when the View trick has captured it, else its flat photo.
- */
 export default function GarmentViews({ shirt, mainRef, hideMain = false, onCaptureCanvas, drawn = [] }: GarmentViewsProps) {
   const views = viewsFor(shirt);
   const [active, setActive] = useState(0);
   const mains = useRef<(HTMLCanvasElement | null)[]>([]);
   const thumbs = useRef<(HTMLCanvasElement | null)[]>([]);
 
-  // Thumbnails are copies of the large captures, once those are drawn.
   useEffect(() => {
     drawn.forEach((done, i) => {
       const src = mains.current[i];
@@ -60,12 +46,8 @@ export default function GarmentViews({ shirt, mainRef, hideMain = false, onCaptu
 
   return (
     <div className="flex flex-col items-center gap-4 px-6 pt-8 pb-5" style={{ background: BACKGROUND }}>
-      {/* All views stay mounted (and loaded); switching just crossfades. */}
-      {/* Hidden with visibility, not opacity, so the hand-over from the 3D shirt is instant. */}
       <div
         ref={mainRef}
-        // Sized by width (capped at the column's width), so on a tall, narrow phone it never comes
-        // out wider than the panel; the aspect ratio gives the height.
         className="relative aspect-[1024/1415] w-[min(100%,calc(min(52dvh,30rem)*1024/1415))]"
         style={{ visibility: hideMain ? "hidden" : "visible" }}
       >
@@ -75,7 +57,6 @@ export default function GarmentViews({ shirt, mainRef, hideMain = false, onCaptu
             aria-hidden={i !== active}
             className={`absolute inset-0 transition-opacity duration-200 motion-reduce:transition-none ${i === active ? "opacity-100" : "opacity-0"}`}
           >
-            {/* "inherit", not "visible": a visible child would show through the hidden main view. */}
             <div className="h-full w-full" style={{ visibility: drawn[i] ? "hidden" : "inherit" }}>
               <GarmentImage src={view.src} alt={`${shirt.name}, ${view.label.toLowerCase()}`} hook={view.hook} mirror={view.mirror} />
             </div>

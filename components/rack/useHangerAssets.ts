@@ -7,7 +7,6 @@ import { buildHangerBody, buildHook } from "./hangers";
 import { SHIRTS } from "./shirts";
 import { createWoodGrain } from "./textures";
 
-/** Hook, per-garment hanger shapes and their materials; disposes on unmount. */
 export function useHangerAssets(textures: Texture[]) {
   const gl = useThree((s) => s.gl);
 

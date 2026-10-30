@@ -7,10 +7,6 @@ import { SHIRTS } from "./shirts";
 import type { ShirtSurface } from "./shirtSurface";
 import type { RackController } from "./useRackControls";
 
-/**
- * Owns the cloth worker. `step` simulates up to MAX_SIMULATED garments nearest the center (the
- * rest stay frozen) and advances them toward the current hanger poses.
- */
 export function useClothSim(
   grid: { cols: number; rows: number },
   surfaces: ShirtSurface[],
@@ -41,7 +37,6 @@ export function useClothSim(
     }
   }
 
-  /** The cloth only ever sees the hanger and the pointer move; all motion comes from the solver. */
   function step(dt: number, offset: number, poses: HangerPose[], pointer: ClothPointer | null) {
     const sim = cloth.current;
     if (!sim) return;

@@ -1,20 +1,15 @@
-// The shopping bag: which items (clothes and shoes), in which sizes, how many. Kept in this browser
-// between visits and shared by every room of the shop (a convenience only: a real checkout would
-// hold the order server-side).
 import { useEffect, useState } from "react";
+import { WATCHES } from "../accessories/watches";
 import { SHOES } from "../shoes/shoes";
 import { SHIRTS } from "./shirts";
 
 const STORAGE_KEY = "ricks-closet-bag";
 export const MAX_QUANTITY = 9;
 
-/** `image`: a thumbnail for items without a flat photo (shoes: a capture of the 3D model, as a data URL). */
 export type BagLine = { id: string; size: string; quantity: number; image?: string };
 
-/** What the bag needs to know about any item in the shop. */
 export type BagItemInfo = { name: string; price: string; image?: string };
 
-/** "₦142,500" -> 142500. */
 export function priceValue(price: string) {
   return Number(price.replace(/[^\d.]/g, "")) || 0;
 }
@@ -27,6 +22,8 @@ export function itemOf(line: BagLine): BagItemInfo | undefined {
   if (shirt) return { name: shirt.name, price: shirt.price, image: line.image ?? shirt.texture };
   const shoe = SHOES.find((s) => s.id === line.id);
   if (shoe) return { name: shoe.name, price: shoe.price, image: line.image };
+  const watch = WATCHES.find((w) => w.id === line.id);
+  if (watch) return { name: watch.name, price: watch.price, image: watch.image };
   return undefined;
 }
 
@@ -34,7 +31,6 @@ function load(): BagLine[] {
   try {
     const parsed: unknown = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]");
     if (!Array.isArray(parsed)) return [];
-    // Drop anything that's no longer in the shop.
     return parsed.filter(
       (l): l is BagLine =>
         typeof l?.id === "string" && typeof l?.size === "string" && Number.isInteger(l?.quantity) && itemOf(l) !== undefined,

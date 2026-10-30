@@ -1,6 +1,5 @@
 import { SHIRTS } from "./shirts";
 
-/** Shown when WebGL is unavailable: a plain horizontal scroll of the shirt images. */
 export default function RackFallback() {
   return (
     <ul className="flex h-full snap-x snap-mandatory items-center gap-6 overflow-x-auto px-[15vw]">

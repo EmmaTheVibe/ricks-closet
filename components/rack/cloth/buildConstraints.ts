@@ -9,7 +9,6 @@ import {
 } from "../constants";
 import type { GarmentKind } from "../shirts";
 
-/** Downsampled alpha channel of the shirt texture, row 0 at the top. */
 export type AlphaMask = { width: number; height: number; data: Uint8Array };
 
 export type ClothSpec = {
@@ -17,37 +16,31 @@ export type ClothSpec = {
   rows: number;
   width: number;
   height: number;
-  top: number; // distance from the hanger origin down to the top grid row
+  top: number;
   kind: GarmentKind;
 };
 
 export type ClothTopology = {
   count: number;
-  restLocal: Float32Array; // flat grid in hanger-local space, xyz per particle
-  invMass: Float32Array; // 0 = pinned to the hanger
+  restLocal: Float32Array;
+  invMass: Float32Array;
   gravityScale: Float32Array;
   a: Uint16Array;
   b: Uint16Array;
   rest: Float32Array;
   stiff: Float32Array;
-  tetherAnchor: Int32Array; // nearest pinned particle, -1 for pinned particles
+  tetherAnchor: Int32Array;
   tetherRest: Float32Array;
 };
 
 const ALPHA_CUTOFF = 0.5;
 
-/** Alpha (0–1) at texture coordinates u, v, with v = 0 at the top of the image. */
 export function sampleAlpha(mask: AlphaMask, u: number, v: number) {
   const x = Math.min(mask.width - 1, Math.floor(u * mask.width));
   const y = Math.min(mask.height - 1, Math.floor(v * mask.height));
   return mask.data[y * mask.width + x] / 255;
 }
 
-/**
- * Builds the particle grid for one shirt. The grid is rectangular but the shirt isn't: particles
- * outside the silhouette ("ghosts") feel no gravity, and links between ghosts are weak, so the
- * transparent corners don't tie the sleeves to the body.
- */
 export function buildConstraints(spec: ClothSpec, mask: AlphaMask): ClothTopology {
   const { cols, rows, width, height, top } = spec;
   const count = cols * rows;
@@ -64,8 +57,6 @@ export function buildConstraints(spec: ClothSpec, mask: AlphaMask): ClothTopolog
 
   const invMass = new Float32Array(count).fill(1);
   if (spec.kind === "pants") {
-    // Clip hanger: the whole waistband is held. Each column is pinned down to its first opaque
-    // row, if that row is near the top (columns beside the waist stay free).
     const waistRows = Math.ceil(rows * 0.15);
     for (let c = 0; c < cols; c++) {
       let first = -1;
@@ -73,8 +64,6 @@ export function buildConstraints(spec: ClothSpec, mask: AlphaMask): ClothTopolog
       for (let r = 0; r <= first; r++) invMass[r * cols + c] = 0;
     }
   }
-  // Shirts: pin the middle columns down to the hanger's bottom bar (at least to the first opaque
-  // row): the yoke rests on the hanger. Outer columns (shoulder tips, sleeves) stay free.
   const pinFrom = Math.round((cols - 1) * (0.5 - PIN_SPAN / 2));
   const pinTo = Math.round((cols - 1) * (0.5 + PIN_SPAN / 2));
   for (let c = pinFrom; c <= pinTo && spec.kind === "shirt"; c++) {
@@ -87,7 +76,6 @@ export function buildConstraints(spec: ClothSpec, mask: AlphaMask): ClothTopolog
     }
   }
 
-  // Ghosts float; the lowest opaque rows of each column (body and sleeve hems) are heavier.
   const gravityScale = new Float32Array(count);
   for (let c = 0; c < cols; c++) {
     let hemLeft = HEM_ROWS;
@@ -119,7 +107,6 @@ export function buildConstraints(spec: ClothSpec, mask: AlphaMask): ClothTopolog
     stiff.push(ghost ? stiffness * GHOST_STIFFNESS : stiffness);
   };
 
-  // Top-down order lets each relaxation sweep carry corrections from the pins toward the hem.
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       const i = r * cols + c;
@@ -134,7 +121,6 @@ export function buildConstraints(spec: ClothSpec, mask: AlphaMask): ClothTopolog
     }
   }
 
-  // Tethers (long-range attachments) stop the hanging cloth from stretching under its own weight.
   const tetherAnchor = new Int32Array(count).fill(-1);
   const tetherRest = new Float32Array(count);
   for (let i = 0; i < count; i++) {

@@ -1,8 +1,6 @@
-// Small textures drawn at runtime, so nothing extra downloads.
 import { CanvasTexture, NoColorSpace, RepeatWrapping, SRGBColorSpace } from "three";
 import { SHIRT_HEIGHT, SHIRT_WIDTH, WEAVE_REPEAT } from "./constants";
 
-/** Soft round falloff, stretched into an oval under each shirt. */
 export function createShadowTexture() {
   const size = 128;
   const canvas = document.createElement("canvas");
@@ -19,7 +17,6 @@ export function createShadowTexture() {
   return texture;
 }
 
-/** Tileable wood grain running along a tube (u = along its length), greyscale for the wood colour. */
 export function createWoodGrain(anisotropy: number) {
   const width = 512;
   const height = 64;
@@ -29,7 +26,6 @@ export function createWoodGrain(anisotropy: number) {
   const ctx = canvas.getContext("2d")!;
   ctx.fillStyle = "rgb(235,235,235)";
   ctx.fillRect(0, 0, width, height);
-  // Fixed pseudo-random streaks so the grain is identical on every load.
   const rand = (n: number) => {
     const s = Math.sin(n * 12.9898) * 43758.5453;
     return s - Math.floor(s);
@@ -56,9 +52,8 @@ export function createWoodGrain(anisotropy: number) {
 }
 
 const WEAVE_SIZE = 64;
-const WEAVE_LOOP = 8; // px per knit loop
+const WEAVE_LOOP = 8;
 
-/** Tileable jersey-knit bump texture: columns of interlocking V loops. */
 export function createWeaveTexture(anisotropy: number) {
   const canvas = document.createElement("canvas");
   canvas.width = WEAVE_SIZE;

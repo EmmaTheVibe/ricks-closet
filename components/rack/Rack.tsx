@@ -23,13 +23,12 @@ export default function Rack({ controls, interaction, pullOff }: RackProps) {
   const { cloth, step: stepCloth } = useClothSim(grid, surfaces, textures, controls);
 
   const slots = useRef<SlotRefs[]>(SHIRTS.map(emptySlotRefs));
-  const fades = useRef<number[]>(SHIRTS.map(() => 1)); // 3D front opacity per garment
+  const fades = useRef<number[]>(SHIRTS.map(() => 1));
   const poses = useRef<HangerPose[]>(SHIRTS.map(() => ({ x: 0, y: RAIL_Y, z: 0, rotY: 0 })));
   const { updateGrabTarget } = useShirtPicking(interaction, cloth, slots, textures);
   const placement = useRef<Placement>({ x: 0, y: 0, z: 0, scale: 1 });
-  const hem = useRef({ x: 0, z: 0 }); // the lifted shirt's hem last frame, for its swing speed
+  const hem = useRef({ x: 0, z: 0 });
 
-  // One loop, in order: move the rack, lay out every slot, then step the cloth toward the new poses.
   useFrame((state, dt) => {
     const camera = state.camera as PerspectiveCamera;
     const layout = layoutForAspect(state.size.width / state.size.height);
@@ -37,7 +36,6 @@ export default function Rack({ controls, interaction, pullOff }: RackProps) {
     controls.setPxToIndex(worldPerPx / centerSlotRate(layout));
     controls.step(dt);
 
-    // View: freeze the rack into a still (without the shirt), then draw only the shirt.
     const liftedSlot = pullOff.index >= 0 ? slots.current[pullOff.index].slot : null;
     if (pullOff.wantsFreeze && liftedSlot) {
       pullOff.freeze(state.gl, state.scene, camera, liftedSlot);
@@ -56,12 +54,9 @@ export default function Rack({ controls, interaction, pullOff }: RackProps) {
     for (let i = 0; i < SHIRTS.length; i++) {
       const { slot, body, sideView, shadow } = slots.current[i];
       if (!slot || !body) continue;
-      // The rack is a loop: each garment sits at its shortest distance around the ring, so the
-      // one furthest away swaps ends off-screen.
       const d = wrapDistance(i - controls.offset, SHIRTS.length);
       const pose = poses.current[i];
       pose.rotY = body.rotation.y = slotRotationY(d, SHIRTS[i].kind === "pants");
-      // The shirt taken off the rail for View flies, hook and all, and shrinks to the modal's image.
       const lifted = i === pullOff.index;
       const at = lifted
         ? pullOff.place(slotX(d, layout), placement.current)
@@ -78,8 +73,6 @@ export default function Rack({ controls, interaction, pullOff }: RackProps) {
         fades.current[i] = updateSideView(sideView, assets, d, pose.rotY, surfaces[i].hemTip);
       }
 
-      // The floor shadow drifts under the hem as the garment swings or is tugged. A lifted one
-      // stays on the floor and fades away (shrinks) as the shirt leaves.
       if (shadow) {
         shadow.position.x = surfaces[i].hemShift.x;
         shadow.position.y = (FLOOR_Y - at.y) / at.scale;
@@ -96,14 +89,12 @@ export default function Rack({ controls, interaction, pullOff }: RackProps) {
 
     stepCloth(dt, controls.offset, poses.current, interaction.clothPointer());
 
-    // View: the shirt is at rest over the modal's image; draw each view into the modal, lit as here.
     if (pullOff.wantsCapture) {
       const { body, sideView } = slots.current[pullOff.index];
       const assets = sideViews[pullOff.index];
       pullOff.captureRest(state.gl, state.scene, camera, (kind) => {
         if (!body) return false;
         if (kind === null || kind === "front") {
-          // Back to normal: the rack's next frame lays the side view out again.
           body.visible = true;
           if (sideView) sideView.visible = false;
           return kind === "front";

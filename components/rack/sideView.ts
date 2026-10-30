@@ -1,21 +1,15 @@
-// Side views: the photo a shirt shows when it turns away from the center.
 import { MathUtils, type BufferAttribute, type Mesh, type MeshStandardMaterial, type Texture } from "three";
 import { SHIRT_HEIGHT, SHIRT_WIDTH, SIDE_VIEW_CUT_AT, SIDE_VIEW_FADE, SIDE_VIEW_HARD_CUT } from "./constants";
 
-export const SIDE_VIEW_ROWS = 16; // plane rows, so the photo can bend with the cloth
-const SIDE_VIEW_HEM_GAIN = 1.1; // follows the simulated hem line one to one
-const SIDE_VIEW_BEND = 0.5; // bend curve exponent: near 1 lets the fabric swing from high up, like the front
+export const SIDE_VIEW_ROWS = 16;
+const SIDE_VIEW_HEM_GAIN = 1.1;
+const SIDE_VIEW_BEND = 0.5;
 
-/** What one garment shows from the side: its photo, and a separate one for the left if asymmetric. */
 export type SideViewAssets = {
   material: MeshStandardMaterial;
   photo: { right: Texture; left: Texture | null };
 };
 
-/**
- * Updates a garment's side view for its distance `d` from the center and its turn `rotY`, and
- * returns how much of the 3D front should still show (1 = all of it).
- */
 export function updateSideView(
   mesh: Mesh,
   assets: SideViewAssets,
@@ -27,13 +21,9 @@ export function updateSideView(
   let amount: number;
   let front: number;
   if (SIDE_VIEW_HARD_CUT) {
-    // One-frame swap at the fastest part of the turn: nothing is ever see-through, so nothing can
-    // flash or ghost through.
     amount = Math.abs(d) >= SIDE_VIEW_CUT_AT ? 1 : 0;
     front = 1 - amount;
   } else {
-    // Overlapped, not even: the side photo is nearly solid before the front fades much, so the
-    // light background never shows through mid-swap.
     const [start, end] = SIDE_VIEW_FADE;
     const span = end - start;
     amount = MathUtils.smoothstep(Math.abs(d), start, start + span * 0.6);
@@ -42,8 +32,7 @@ export function updateSideView(
 
   material.opacity = amount;
   mesh.visible = amount > 0.001;
-  mesh.scale.x = d < 0 ? -1 : 1; // the photo faces left; mirror it on the left side
-  // Asymmetric garments have their own photo for the left (e.g. a D-ring on one side only).
+  mesh.scale.x = d < 0 ? -1 : 1;
   if (assets.photo.left) {
     const map = d < 0 ? assets.photo.left : assets.photo.right;
     if (material.map !== map) material.map = map;
@@ -52,13 +41,7 @@ export function updateSideView(
   return front;
 }
 
-/**
- * Bends a side-view photo with the cloth sim: the shirt keeps simulating while its side photo
- * shows, so the photo is sheared by the simulated hem's sideways motion, pinned at the shoulders
- * and growing toward the hem. All the sway still comes from the solver.
- */
 function bendSideView(mesh: Mesh, hemTip: { x: number; z: number }, rotY: number, mirror: number) {
-  // Hem motion in the slot's frame (the side photo isn't turned with the hanger body).
   const sideways = (hemTip.x * Math.cos(rotY) + hemTip.z * Math.sin(rotY)) * SIDE_VIEW_HEM_GAIN * mirror;
   const position = mesh.geometry.getAttribute("position") as BufferAttribute;
   for (let i = 0; i < position.count; i++) {
@@ -69,10 +52,6 @@ function bendSideView(mesh: Mesh, hemTip: { x: number; z: number }, rotY: number
   position.needsUpdate = true;
 }
 
-/**
- * Shows a side photo still (fully opaque, unbent), as the rack shows it on the right, or
- * `mirrored` as on the left: for capturing it into the product view (see pullOff.ts).
- */
 export function showSideViewStill(mesh: Mesh, assets: SideViewAssets, mirrored: boolean) {
   const material = mesh.material as MeshStandardMaterial;
   material.opacity = 1;

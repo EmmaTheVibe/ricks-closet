@@ -14,30 +14,26 @@ import {
 import { CLICK_SLOP_PX, SIGN_INK, SIGN_PAPER, SIGN_SIZE, SIGN_TILT_DEG, SIGN_Y } from "./constants";
 
 const TEXTURE_WIDTH = 1536;
-const CLIP = 0.022; // clipped corner size
-const EYELET_INSET = 0.035; // eyelet centre from the top corners
+const CLIP = 0.022;
+const EYELET_INSET = 0.035;
 const EYELET_RADIUS = 0.007;
-const TWINE_APEX = 2.4; // the two strands meet out of view, above the camera's top edge
+const TWINE_APEX = 2.4;
 
-// Tapping the sign: it swings away and back from the apex like a pendulum, and twists on its
-// twine (spins about the vertical) if tapped off-centre, unwinding back and forth as it settles.
-const SWING_RATE = 9.81 / (TWINE_APEX - SIGN_Y); // pendulum: g / length
+const SWING_RATE = 9.81 / (TWINE_APEX - SIGN_Y);
 const SWING_DAMPING = 0.9;
-const SWING_KICK = 0.9; // rad/s away from the viewer per tap
-const SWING_MAX = 0.6; // rad
-const SPIN_RATE = 5; // the twine's twist stiffness
+const SWING_KICK = 0.9;
+const SWING_MAX = 0.6;
+const SPIN_RATE = 5;
 const SPIN_DAMPING = 0.55;
-const SPIN_KICK = 7; // rad/s per tap at the card's edge, less toward the middle
-const SPIN_MAX_SPEED = 12; // rad/s, however many taps
-const REDUCED_KICK = 0.3; // with reduced motion, taps move it this much as far
+const SPIN_KICK = 7;
+const SPIN_MAX_SPEED = 12;
+const REDUCED_KICK = 0.3;
 
-/** Font the page already loaded through next/font, falling back to a system sans. */
 function pageFont() {
   const family = getComputedStyle(document.documentElement).getPropertyValue("--font-geist-sans").trim();
   return family ? `${family}, Arial, sans-serif` : "Arial, sans-serif";
 }
 
-/** Card outline with clipped corners and two punched eyelet holes, centred on the origin. */
 function createTagGeometry() {
   const [w, h, thickness] = SIGN_SIZE;
   const x = w / 2;
@@ -60,26 +56,18 @@ function createTagGeometry() {
 
   const geometry = new ExtrudeGeometry(shape, { depth: thickness, bevelEnabled: false });
   geometry.translate(0, 0, -thickness / 2);
-  // ExtrudeGeometry puts both caps in group 0 (back cap first, then front) and the edges in group
-  // 1. Split the caps so only the front is printed: the back is plain card (the edge material),
-  // which is what shows when the tag spins round.
   const [caps, edges] = geometry.groups;
   const half = caps.count / 2;
   geometry.clearGroups();
   geometry.addGroup(caps.start, half, 1);
   geometry.addGroup(caps.start + half, half, 0);
   geometry.addGroup(edges.start, edges.count, 1);
-  // Cap UVs come out in shape units; map them to 0–1 across the card for the printed face.
   const pos = geometry.getAttribute("position") as BufferAttribute;
   const uv = geometry.getAttribute("uv") as BufferAttribute;
   for (let i = 0; i < uv.count; i++) uv.setXY(i, (pos.getX(i) + x) / w, (pos.getY(i) + y) / h);
   return geometry;
 }
 
-/**
- * Printed face of the tag: kraft card with a light fibre speckle, "RICK'S" in spaced capitals over
- * an italic serif "Closet". Drawn once, then redrawn when the page's web font finishes loading.
- */
 function createTagFace(anisotropy: number) {
   const [w, h] = SIGN_SIZE;
   const canvas = document.createElement("canvas");
@@ -89,7 +77,6 @@ function createTagFace(anisotropy: number) {
   texture.colorSpace = SRGBColorSpace;
   texture.anisotropy = anisotropy;
 
-  // Fixed speckle so redraws look identical.
   const fibres = Array.from({ length: 2600 }, (_, i) => {
     const r = (n: number) => {
       const s = Math.sin(i * 12.9898 + n * 78.233) * 43758.5453;
@@ -113,7 +100,6 @@ function createTagFace(anisotropy: number) {
       ctx.lineTo(f.x * cw + Math.cos(f.angle) * f.len, f.y * ch + Math.sin(f.angle) * f.len);
       ctx.stroke();
     }
-    // Slightly darker, worn edges.
     const edge = ctx.createRadialGradient(cw / 2, ch / 2, ch * 0.4, cw / 2, ch / 2, cw * 0.62);
     edge.addColorStop(0, "rgba(60,40,20,0)");
     edge.addColorStop(1, "rgba(60,40,20,0.22)");
@@ -122,7 +108,6 @@ function createTagFace(anisotropy: number) {
 
     ctx.fillStyle = SIGN_INK;
 
-    // "RICK'S", manually tracked (canvas letterSpacing isn't available everywhere yet).
     const small = ch * 0.19;
     ctx.font = `800 ${small}px ${sans}`;
     const letters = [..."RICK’S"];
@@ -152,7 +137,6 @@ function createTagFace(anisotropy: number) {
   return texture;
 }
 
-/** A giant kraft swing tag hung on twine above the rail; the shirts slide beneath it. Tap it to set it swinging. */
 export default function Sign() {
   const gl = useThree((s) => s.gl);
   const [w, h] = SIGN_SIZE;
@@ -176,11 +160,10 @@ export default function Sign() {
   });
 
   const tap = (e: ThreeEvent<MouseEvent>) => {
-    if (e.delta > CLICK_SLOP_PX) return; // a swipe across the sign moves the rack, not the sign
+    if (e.delta > CLICK_SLOP_PX) return;
     e.stopPropagation();
     const m = motion.current;
     const kick = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? REDUCED_KICK : 1;
-    // Where it was hit across the card (-1 left edge .. 1 right edge), in the card's own frame.
     const across = MathUtils.clamp(e.object.worldToLocal(e.point.clone()).x / (w / 2), -1, 1);
     m.swingSpeed += SWING_KICK * kick;
     m.spinSpeed = MathUtils.clamp(m.spinSpeed + SPIN_KICK * across * kick, -SPIN_MAX_SPEED, SPIN_MAX_SPEED);
@@ -198,7 +181,6 @@ export default function Sign() {
     const edge = new MeshStandardMaterial({ color: SIGN_PAPER, roughness: 0.95 });
     const metal = new MeshStandardMaterial({ color: "#b9a27a", metalness: 1, roughness: 0.35 });
     const twine = new MeshStandardMaterial({ color: "#7a5c3c", roughness: 1 });
-    // ExtrudeGeometry groups: 0 = front and back caps, 1 = the cut edges.
     return { geometry, materials: [face, edge], metal, twine };
   }, [gl]);
   useEffect(
@@ -217,8 +199,6 @@ export default function Sign() {
   const tilt = MathUtils.degToRad(SIGN_TILT_DEG);
   const eyelets = [-1, 1].map((side) => [side * (w / 2 - EYELET_INSET), h / 2 - EYELET_INSET] as const);
 
-  // Pivots at the apex where the strands meet: swings about it, and spins about the vertical
-  // through it (the strands turn with the card).
   return (
     <group position={[0, TWINE_APEX, 0]}>
       <group ref={swing}>
@@ -237,7 +217,6 @@ export default function Sign() {
               </mesh>
             ))}
           </group>
-          {/* Twine from each eyelet up to the apex, above the view. */}
           {eyelets.map(([ex, ey]) => {
             const sx = ex * Math.cos(tilt) - ey * Math.sin(tilt);
             const sy = ex * Math.sin(tilt) + ey * Math.cos(tilt);

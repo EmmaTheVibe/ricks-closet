@@ -8,7 +8,6 @@ export type HangerPose = { x: number; y: number; z: number; rotY: number };
 
 type Vec3 = [number, number, number];
 
-/** Pointer input for one shirt, in its hanger-local space. */
 export type ClothPointer =
   | { kind: "hover"; id: number; point: Vec3; velocity: Vec3 }
   | { kind: "grab"; id: number; seq: number; anchor: Vec3; target: Vec3 };
@@ -20,7 +19,7 @@ export type WorkerRequest =
       spec: ClothSpec;
       mask: AlphaMask;
       pose: HangerPose;
-      positions: Float32Array; // current hanger-local pose to start from
+      positions: Float32Array;
     }
   | { type: "remove"; id: number }
   | {
@@ -54,21 +53,16 @@ export function alphaMask(texture: Texture): AlphaMask {
 
 type Entry = {
   surface: ShirtSurface;
-  buffer: Float32Array | null; // null while it is in the worker
+  buffer: Float32Array | null;
 };
 
 type Relax = {
   surface: ShirtSurface;
-  from: Float32Array; // pose when the shirt left the sim
+  from: Float32Array;
   current: Float32Array;
   elapsed: number;
 };
 
-/**
- * Main-thread side of the cloth worker. Each simulated shirt owns one position buffer that is
- * transferred to the worker with every step and handed back with the result, so nothing is copied.
- * A shirt that leaves the sim eases back to its rest pose instead of freezing mid-swing.
- */
 export class ClothSim {
   private worker = new Worker(new URL("./cloth.worker.ts", import.meta.url), { type: "module" });
   private entries = new Map<number, Entry>();
@@ -99,12 +93,10 @@ export class ClothSim {
       pose: { ...pose },
       positions,
     };
-    // Size the result buffer before the transfer below detaches `positions` (length 0 afterwards).
     this.entries.set(id, { surface, buffer: new Float32Array(positions.length) });
     this.worker.postMessage(request, [positions.buffer]);
   }
 
-  /** Stops simulating; the shirt eases from its last pose back to rest. */
   remove(id: number) {
     const entry = this.entries.get(id);
     if (!entry) return;
@@ -151,9 +143,9 @@ export class ClothSim {
     this.inFlight = false;
     for (const { id, buffer, ready } of sims) {
       const entry = this.entries.get(id);
-      if (!entry) continue; // removed while in flight
+      if (!entry) continue;
       entry.buffer = buffer;
-      if (ready) entry.surface.setPose(buffer); // still warming up otherwise: keep the current pose
+      if (ready) entry.surface.setPose(buffer);
     }
   }
 

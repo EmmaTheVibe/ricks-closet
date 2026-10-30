@@ -5,10 +5,6 @@ type SizePickerProps = {
   onChange: (size: string) => void;
 };
 
-/**
- * Size buttons. Native radios underneath, so arrow keys and screen readers work as a group.
- * Sold-out sizes stay in place, crossed out and disabled, so the range still reads in order.
- */
 export default function SizePicker({ sizes, soldOut = [], value, onChange }: SizePickerProps) {
   return (
     <fieldset>

@@ -27,10 +27,13 @@ import {
   CAMERA_POSITION,
   CAMERA_TARGET,
   ENV_INTENSITY,
+  ENV_MAP,
   KEY_LIGHT_COLOR,
   KEY_LIGHT_INTENSITY,
+  ROOM_WALL_Z,
   SHIRT_WIDTH,
 } from "./constants";
+import Surroundings from "../home/Surroundings";
 
 function hasWebGL() {
   try {
@@ -41,7 +44,6 @@ function hasWebGL() {
   }
 }
 
-/** Mounts only once everything in its Suspense boundary has loaded; reports after the first frame. */
 function SceneReady({ onReady }: { onReady: () => void }) {
   useEffect(() => {
     const id = requestAnimationFrame(onReady);
@@ -50,11 +52,6 @@ function SceneReady({ onReady }: { onReady: () => void }) {
   return null;
 }
 
-/**
- * Pulls the camera back on narrow screens so the center shirt always fits. The camera stays level
- * and the frame is shifted down instead of tilted (like a shift lens), so hanging garments stay
- * vertical at the edges of the screen instead of leaning.
- */
 function CameraRig() {
   const last = useRef({ z: 0, width: 0, height: 0 });
   useFrame(({ camera, size }) => {
@@ -69,7 +66,6 @@ function CameraRig() {
     const eyeY = CAMERA_POSITION[1];
     cam.position.set(0, eyeY, z);
     cam.lookAt(0, eyeY, 0);
-    // Shift the frame so CAMERA_TARGET lands at the centre, as it did when the camera tilted.
     const shift = ((eyeY - CAMERA_TARGET[1]) / (z * tanHalfFov)) * (size.height / 2);
     cam.setViewOffset(size.width, size.height, 0, shift, size.width, size.height);
   });
@@ -86,7 +82,6 @@ export default function RackScene() {
   const sound = useRackSound();
   const bag = useBag();
   const [bagOpen, setBagOpen] = useState(false);
-  // View: "open" while the modal is up, "returning" while the shirt flies back onto the rail.
   const [view, setView] = useState<"closed" | "open" | "returning">("closed");
   const [pullOff] = useState(() => new PullOff(() => setView("closed")));
   const openView = () => {
@@ -100,7 +95,6 @@ export default function RackScene() {
   const [ready, setReady] = useState(false);
   const markReady = useCallback(() => setReady(true), []);
 
-  // Stop rendering (and with it, cloth stepping) while the canvas is scrolled offscreen.
   const [onScreen, setOnScreen] = useState(true);
   useEffect(() => {
     const el = dragArea.current;
@@ -114,8 +108,6 @@ export default function RackScene() {
 
   return (
     <div className="relative h-full w-full">
-      {/* View stacks, bottom to top: the rack frozen into a still, the modal, then the canvas
-          drawing only the shirt (see pullOff.ts). Shown and hidden by the rack's frame loop. */}
       <canvas
         ref={(el) => pullOff.setSnapshot(el)}
         aria-hidden
@@ -139,12 +131,9 @@ export default function RackScene() {
           shadows="percentage"
           dpr={[1, 2]}
           frameloop={onScreen ? "always" : "never"}
-          // The Canvas sets pointer-events on its own wrapper, so it must be turned off here too:
-          // during View the canvas sits above the modal, and clicks have to go through to it.
           style={{ pointerEvents: view === "closed" ? "auto" : "none" }}
           camera={{ fov: CAMERA_FOV, position: CAMERA_POSITION }}
           onCreated={({ gl }) => {
-            // Khronos PBR Neutral keeps product colours true (ACES, the default, shifts and washes them).
             gl.toneMapping = NeutralToneMapping;
             gl.domElement.setAttribute("role", "img");
             gl.domElement.setAttribute("aria-label", "Clothes rack");
@@ -166,31 +155,23 @@ export default function RackScene() {
             shadow-camera-right={3}
             shadow-camera-top={3}
             shadow-camera-bottom={-1}
-            // Also lights the shirt while it's drawn alone during View.
             onUpdate={(light) => light.layers.enable(SOLO_LAYER)}
           />
 
           <Suspense fallback={null}>
-            {/* drei's "studio" preset, self-hosted (the preset loads from a slow third-party CDN). */}
-            <Environment files="/hdri/studio_small_03_1k.hdr" environmentIntensity={ENV_INTENSITY} />
+            <Environment files={ENV_MAP} environmentIntensity={ENV_INTENSITY} />
             <Rack controls={controls} interaction={interaction} pullOff={pullOff} />
             <RackSounds controls={controls} sound={sound} />
             <Sign />
             <SceneReady onReady={markReady} />
           </Suspense>
 
-          <mesh rotation={[-Math.PI / 2, 0, 0]}>
-            <planeGeometry args={[40, 40]} />
-            {/* Unlit, so it matches the background exactly; floor shadows are drawn on top. */}
-            <meshBasicMaterial color={BACKGROUND} toneMapped={false} />
-          </mesh>
+          <Surroundings wallZ={ROOM_WALL_Z} decor={{ clear: 0.065, sconcePanel: 1 }} />
         </Canvas>
       </div>
 
-      {/* The visible sign is 3D (Sign.tsx); this keeps the page title for screen readers. */}
       <h1 className="sr-only">Rick’s Closet</h1>
 
-      {/* Cursor label; positioned every frame by ShirtInteraction, not by React. */}
       <div
         ref={(el) => interaction.setLabel(el)}
         aria-hidden
@@ -199,7 +180,6 @@ export default function RackScene() {
         GRAB
       </div>
 
-      {/* The rack's controls step back while View is up (the canvas covers them then). */}
       <div inert={view !== "closed"} className={`transition-opacity duration-300 ${view === "closed" ? "" : "opacity-0"}`}>
         <RackOverlay
           shirt={SHIRTS[index]}

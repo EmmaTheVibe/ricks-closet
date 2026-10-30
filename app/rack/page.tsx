@@ -6,8 +6,6 @@ export const metadata: Metadata = {
   description: "Shop at Rick’s Closet.",
 };
 
-// Draw edge to edge behind notches and the home indicator; the overlay pads itself by the
-// safe-area insets so its controls stay clear of them.
 export const viewport: Viewport = {
   viewportFit: "cover",
   themeColor: "#ebe8e3",

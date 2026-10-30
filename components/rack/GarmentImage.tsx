@@ -3,19 +3,15 @@ import { HANGER_DROP, SHIRT_HEIGHT } from "./constants";
 
 const IMAGE_W = 1024;
 const IMAGE_H = 1280;
-const PX = IMAGE_H / SHIRT_HEIGHT; // image pixels per metre
-const HEADROOM = 135; // room above the image for the hook
-/** Share of a GarmentImage's height above the garment image itself (the hook's headroom). */
+const PX = IMAGE_H / SHIRT_HEIGHT;
+const HEADROOM = 135;
 export const IMAGE_TOP_SHARE = HEADROOM / (IMAGE_H + HEADROOM);
 
-/** The hook seen from the front (its curl edge-on) or from the side, as an SVG path. */
 function hookPath(side: boolean) {
   const pts = HOOK_POINTS.map(([y, z]) => [
-    // Garment fronts face +z, and side photos face left: +z draws to the left.
     IMAGE_W / 2 - (side ? z * PX : 0),
     (-HANGER_DROP - y) * PX,
   ]);
-  // Catmull-Rom through the points, as the 3D hook is, written as cubic Béziers.
   const f = (p: number[]) => `${p[0].toFixed(1)} ${p[1].toFixed(1)}`;
   let d = `M${f(pts[0])}`;
   for (let i = 0; i < pts.length - 1; i++) {
@@ -32,13 +28,10 @@ const HOOK = { front: hookPath(false), side: hookPath(true) };
 type GarmentImageProps = {
   src: string;
   alt: string;
-  /** Which way the steel hook is seen; none for pants (their clip hanger is 3D only). */
   hook: "front" | "side" | null;
-  /** Mirror the image (and its hook), as the rack does for side photos on its left. */
   mirror?: boolean;
 };
 
-/** One prepared garment image (1024×1280) with the rack's steel hook drawn above it. */
 export default function GarmentImage({ src, alt, hook, mirror = false }: GarmentImageProps) {
   return (
     <svg
@@ -49,7 +42,6 @@ export default function GarmentImage({ src, alt, hook, mirror = false }: Garment
     >
       <g transform={mirror ? `matrix(-1 0 0 1 ${IMAGE_W} 0)` : undefined}>
         {hook && (
-          // Drawn under the image, so the hook's end disappears into the painted wooden neck.
           <g fill="none" strokeLinecap="round" strokeLinejoin="round">
             <path d={HOOK[hook]} stroke="#8c8c8c" strokeWidth={HOOK_RADIUS * 2 * PX} />
             <path d={HOOK[hook]} stroke="#e4e4e4" strokeWidth={HOOK_RADIUS * 0.7 * PX} />

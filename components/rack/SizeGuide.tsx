@@ -4,7 +4,6 @@ import type { SizedKind } from "./shirts";
 
 type SizeGuideProps = { id: string; kind: SizedKind; selected: string | null };
 
-/** The size guide table, with UK/US/EU sizes and body measurements in cm or inches. */
 export default function SizeGuide({ id, kind, selected }: SizeGuideProps) {
   const guide = SIZE_GUIDES[kind];
   const [unit, setUnit] = useState<"cm" | "in">("cm");

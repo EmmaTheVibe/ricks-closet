@@ -1,5 +1,3 @@
-// Generates placeholder t-shirt PNGs (1024×1280, transparent background) into public/shirts/.
-// Run with: npm run shirts
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
@@ -8,7 +6,6 @@ const W = 1024;
 const H = 1280;
 const OUT_DIR = path.join(process.cwd(), "public", "shirts");
 
-// Shoulders sit near the top edge so the top grid row lines up with the hanger.
 const SILHOUETTE = `
   M 400 24
   C 440 56 584 56 624 24
@@ -16,7 +13,6 @@ const SILHOUETTE = `
   L 800 1236 Q 512 1258 224 1236
   L 232 400 L 144 450 L 20 360 L 170 110 Z`;
 
-// Inside of the back panel, seen through the neck opening.
 const NECK_INSIDE = "M 400 24 C 440 56 584 56 624 24 C 594 120 430 120 400 24 Z";
 const NECKLINE = "M 400 24 C 430 120 594 120 624 24";
 const ARMHOLES = "M 170 110 Q 215 250 232 400 M 854 110 Q 809 250 792 400";
@@ -74,11 +70,8 @@ function shirtSvg({ base, stitch, stripes, twill, pocket, ringer }) {
 </svg>`;
 }
 
-
 await mkdir(OUT_DIR, { recursive: true });
 
-// Pants hang from a clip hanger by the waistband, so the waistband sits at the top edge. The gap
-// between the legs is transparent, which lets each leg swing on its own in the cloth sim.
 const PANTS = `
   M 272 24 L 752 24 L 768 300 L 744 1250 L 552 1250
   L 522 384 L 502 384 L 472 1250 L 280 1250 L 256 300 Z`;

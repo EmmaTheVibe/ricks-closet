@@ -1,5 +1,3 @@
-// Verlet cloth solver. Simulates in world space so moving the hanger gives inertia, and returns
-// positions in hanger-local space so the mesh can stay parented to the hanger.
 import {
   CLOTH_INERTIA,
   DAMPING,
@@ -22,9 +20,9 @@ import {
 import { buildConstraints, type ClothTopology } from "./buildConstraints";
 import type { ClothPointer, HangerPose, WorkerRequest, WorkerResponse } from "./ClothSim";
 
-const WARMUP_DAMPING = 0.9; // heavy damping so the warm-up settles fully before the first frame
-const WARMUP_STEPS_PER_FRAME = 20; // spread warm-up so a new shirt never stalls the others
-const WIND_FADE = 0.5; // metres below the hanger bar over which the wind fades in
+const WARMUP_DAMPING = 0.9;
+const WARMUP_STEPS_PER_FRAME = 20;
+const WIND_FADE = 0.5;
 
 type Grab = { seq: number; particles: Int32Array; weights: Float32Array; offsets: Float32Array };
 
@@ -32,11 +30,11 @@ type Sim = {
   topo: ClothTopology;
   pos: Float32Array;
   prev: Float32Array;
-  pose: HangerPose; // pose at the end of the last substep
+  pose: HangerPose;
   acc: number;
   warmupLeft: number;
   time: number;
-  windMask: Float32Array; // 0 at the hanger, 1 toward the hem
+  windMask: Float32Array;
   grab: Grab | null;
 };
 
@@ -44,13 +42,11 @@ const sims = new Map<number, Sim>();
 const fromPose: HangerPose = { x: 0, y: 0, z: 0, rotY: 0 };
 const substepPose: HangerPose = { x: 0, y: 0, z: 0, rotY: 0 };
 
-/** 1 at the centre, easing to 0 at `radius`. */
 function falloff(dist: number, radius: number) {
   const t = Math.min(1, dist / radius);
   return 1 - t * t * (3 - 2 * t);
 }
 
-/** Picks the particles near the grab point, with their offsets so the patch keeps its shape. */
 function selectGrab(sim: Sim, seq: number, anchor: [number, number, number]): Grab {
   const { pos, pose } = sim;
   const { invMass, count } = sim.topo;
@@ -81,7 +77,6 @@ function selectGrab(sim: Sim, seq: number, anchor: [number, number, number]): Gr
   };
 }
 
-/** Pointer forces: grabbed cloth is pulled to the pointer; hovered cloth is pushed back and dragged. */
 function applyPointer(sim: Sim, pose: HangerPose, pointer: ClothPointer) {
   const { pos } = sim;
   const cos = Math.cos(pose.rotY);
@@ -116,7 +111,6 @@ function applyPointer(sim: Sim, pose: HangerPose, pointer: ClothPointer) {
     vy *= s;
     vz *= s;
   }
-  // Pointer velocity to world space (rotation only).
   const wvx = vx * cos + vz * sin;
   const wvz = -vx * sin + vz * cos;
   const { invMass, count } = sim.topo;
@@ -128,16 +122,15 @@ function applyPointer(sim: Sim, pose: HangerPose, pointer: ClothPointer) {
     const f = falloff(dist, PUSH_RADIUS) * DT * DT;
     pos[k] += wvx * PUSH_DRAG * f;
     pos[k + 1] += vy * PUSH_DRAG * f;
-    pos[k + 2] += (wvz * PUSH_DRAG - PUSH_STRENGTH) * f; // pushed away from the camera
+    pos[k + 2] += (wvz * PUSH_DRAG - PUSH_STRENGTH) * f;
   }
 }
 
-/** A slow travelling wave through the shirt's face, strongest at the hem. */
 function applyWind(sim: Sim, pose: HangerPose) {
   const { pos, time, windMask } = sim;
   const { restLocal, invMass, count } = sim.topo;
   const gust = WIND_STRENGTH * (0.6 + 0.4 * Math.sin(time * 0.37) * Math.sin(time * 0.23 + 1.3));
-  const nx = Math.sin(pose.rotY); // shirt's facing direction in world space
+  const nx = Math.sin(pose.rotY);
   const nz = Math.cos(pose.rotY);
   for (let i = 0; i < count; i++) {
     if (invMass[i] === 0 || windMask[i] === 0) continue;
@@ -149,11 +142,6 @@ function applyWind(sim: Sim, pose: HangerPose) {
   }
 }
 
-/**
- * Moves the free particles rigidly along with `amount` of the hanger's motion from `from` to `to`.
- * Both pos and prev move, so no velocity is added: the cloth only swings in response to the
- * remaining (1 - amount) of the motion. This is what keeps the shirts heavy and calm.
- */
 function carry(sim: Sim, from: HangerPose, to: HangerPose, amount: number) {
   const turn = (to.rotY - from.rotY) * amount;
   const cos = Math.cos(turn);
@@ -190,7 +178,6 @@ function placePins(sim: Sim, pose: HangerPose) {
   }
 }
 
-/** One solver step. `pointer` and wind only apply once the shirt is live (not during warm-up). */
 function step(sim: Sim, pose: HangerPose, damping: number, live = false, pointer: ClothPointer | null = null) {
   const { pos, prev } = sim;
   const { count, invMass, gravityScale, a, b, rest, stiff, tetherAnchor, tetherRest } = sim.topo;
@@ -210,7 +197,6 @@ function step(sim: Sim, pose: HangerPose, damping: number, live = false, pointer
     }
     pos[k + 1] += gravity * gravityScale[i];
 
-    // Gentle horizontal pull toward the rest shape on the hanger; vertical is left to gravity.
     const lx = sim.topo.restLocal[k];
     const lz = sim.topo.restLocal[k + 2];
     pos[k] += (pose.x + lx * cos + lz * sin - pos[k]) * SHAPE_STIFFNESS;
@@ -224,7 +210,6 @@ function step(sim: Sim, pose: HangerPose, damping: number, live = false, pointer
   }
 
   for (let iter = 0; iter < ITERATIONS; iter++) {
-    // Alternate sweep direction so the sequential solve doesn't bias the cloth to one side.
     const forward = iter % 2 === 0;
     for (let n = 0; n < a.length; n++) {
       const c = forward ? n : a.length - 1 - n;
@@ -237,7 +222,6 @@ function step(sim: Sim, pose: HangerPose, damping: number, live = false, pointer
       const dz = pos[ib + 2] - pos[ia + 2];
       const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
       if (dist < 1e-9) continue;
-      // Equal masses: each end moves halfway to the rest length, scaled by stiffness.
       const s = (stiff[c] * (dist - rest[c])) / (dist * (wa + wb));
       pos[ia] += dx * s * wa;
       pos[ia + 1] += dy * s * wa;
@@ -266,7 +250,6 @@ function step(sim: Sim, pose: HangerPose, damping: number, live = false, pointer
   }
 }
 
-/** Advances the sim by one frame; returns false while it is still warming up. */
 function advance(sim: Sim, dt: number, to: HangerPose, pointer: ClothPointer | null) {
   if (pointer?.kind === "grab") {
     if (sim.grab?.seq !== pointer.seq) sim.grab = selectGrab(sim, pointer.seq, pointer.anchor);
@@ -286,7 +269,6 @@ function advance(sim: Sim, dt: number, to: HangerPose, pointer: ClothPointer | n
   sim.acc += dt;
   let n = Math.floor(sim.acc / DT);
   if (n > SUBSTEPS_MAX) {
-    // Too far behind (long frame, hidden tab): drop the backlog instead of spiralling.
     n = SUBSTEPS_MAX;
     sim.acc = 0;
   } else {
@@ -294,7 +276,6 @@ function advance(sim: Sim, dt: number, to: HangerPose, pointer: ClothPointer | n
   }
   if (n === 0) return true;
 
-  // Spread the hanger's motion across substeps so fast swipes don't jerk the pins.
   Object.assign(fromPose, sim.pose);
   for (let k = 1; k <= n; k++) {
     const t = k / n;
@@ -328,7 +309,6 @@ function init(msg: Extract<WorkerRequest, { type: "init" }>) {
   const cos = Math.cos(pose.rotY);
   const sin = Math.sin(pose.rotY);
 
-  // Start from the shirt's current local pose (flat, or wherever it was easing back to rest).
   const pos = new Float32Array(topo.count * 3);
   for (let k = 0; k < pos.length; k += 3) {
     pos[k] = pose.x + positions[k] * cos + positions[k + 2] * sin;
@@ -350,7 +330,7 @@ function init(msg: Extract<WorkerRequest, { type: "init" }>) {
     pose: { ...pose },
     acc: 0,
     warmupLeft: WARMUP_STEPS,
-    time: Math.random() * 100, // desynchronise the breeze between shirts
+    time: Math.random() * 100,
     windMask,
     grab: null,
   });
@@ -361,7 +341,6 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
   if (msg.type === "init") init(msg);
   else if (msg.type === "remove") sims.delete(msg.id);
   else {
-    // Hand every buffer back so the main thread can reuse it; `ready` says whether it holds a pose.
     const response: WorkerResponse = { type: "frame", sims: [] };
     for (const { id, pose, buffer } of msg.sims) {
       const sim = sims.get(id);

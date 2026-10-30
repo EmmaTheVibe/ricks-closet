@@ -2,16 +2,10 @@ import { useEffect, type RefObject } from "react";
 import { Vector3 } from "three";
 import type { ClothPointer } from "./cloth/ClothSim";
 
-/** A point on a simulated shirt, in that shirt's hanger-local space. */
 export type ShirtHit = { id: number; local: Vector3 };
 
 const LABEL_OFFSET_PX = 14;
 
-/**
- * Pointer state for hovering and grabbing shirts, kept outside React. The scene installs a picker
- * (raycast) and reads/writes hover and grab targets every frame; the gesture handler starts and
- * ends grabs.
- */
 export class ShirtInteraction {
   clientX = 0;
   clientY = 0;
@@ -49,7 +43,6 @@ export class ShirtInteraction {
     this.inside = false;
   }
 
-  /** Picks the shirt under the given point; true if a grab started. */
   startGrab(clientX: number, clientY: number) {
     this.clientX = clientX;
     this.clientY = clientY;
@@ -72,7 +65,6 @@ export class ShirtInteraction {
     return this.grabbing;
   }
 
-  /** Called by the scene each frame with the shirt under the pointer (mouse only, not while grabbing). */
   updateHover(dt: number) {
     const prev = this.hover;
     this.hover = this.inside && this.mouse && !this.grabbing ? (this.pick?.(this.clientX, this.clientY) ?? null) : null;
@@ -83,7 +75,6 @@ export class ShirtInteraction {
     }
   }
 
-  /** What the cloth worker should feel this frame. */
   clothPointer(): ClothPointer | null {
     if (this.grabbing) {
       const { id, seq, anchor, target } = this.grabbing;
@@ -95,7 +86,6 @@ export class ShirtInteraction {
     return null;
   }
 
-  /** Moves the DOM "GRAB" label and sets the cursor; no React rendering involved. */
   updateCursor() {
     const cursor = this.grabbing ? "grabbing" : this.hover ? "grab" : "";
     if (this.container && cursor !== this.cursor) {
@@ -114,7 +104,6 @@ export class ShirtInteraction {
   }
 }
 
-/** Tracks the pointer over the rack so hover works between drags. */
 export function usePointerTracking(interaction: ShirtInteraction, target: RefObject<HTMLElement | null>) {
   useEffect(() => {
     const el = target.current;

@@ -1,11 +1,19 @@
 import { useEffect, useMemo } from "react";
 import { useThree } from "@react-three/fiber";
-import { MeshPhysicalMaterial } from "three";
-import { createWoodGrain } from "../rack/textures";
+import { MeshBasicMaterial, MeshPhysicalMaterial } from "three";
+import { createPanelGrain } from "../home/textures";
+import { FLOOR_SHADOW_OPACITY } from "../rack/constants";
+import { createShadowTexture, createWoodGrain } from "../rack/textures";
 import ShoePair from "./ShoePair";
 import type { ShoeView } from "./shoeView";
 import { SHOES } from "./shoes";
 import {
+  CASE_BACK,
+  CASE_BASE,
+  CASE_DEPTH,
+  CASE_PANEL,
+  caseTop,
+  caseWidth,
   COLUMN_PITCH,
   COLUMN_STAGGER,
   COLUMNS,
@@ -13,8 +21,6 @@ import {
   ROWS,
   SHELF_DEPTH,
   SHELF_LENGTH,
-  SHELF_LENGTH_VARIATION,
-  SHELF_NUDGE,
   SHELF_STEP,
   SHELF_THICKNESS,
   WOOD_COLOR,
@@ -24,22 +30,16 @@ import {
 
 export type Shelf = { column: number; row: number; x: number; y: number; length: number };
 
-/**
- * Where every shelf goes: COLUMNS columns of ROWS shelves, each column raised by its own share of
- * a step (COLUMN_STAGGER), with small fixed variations in length and position so the wall looks
- * hung by hand, and is the same on every visit.
- */
 export function shelfLayout(): Shelf[] {
   const shelves: Shelf[] = [];
   for (let column = 0; column < COLUMNS; column++) {
     for (let row = 0; row < ROWS; row++) {
-      const k = column * ROWS + row;
       shelves.push({
         column,
         row,
-        x: (column - (COLUMNS - 1) / 2) * COLUMN_PITCH + Math.sin(k * 1.7 + 0.4) * SHELF_NUDGE,
+        x: (column - (COLUMNS - 1) / 2) * COLUMN_PITCH,
         y: FIRST_SHELF_Y + (row + COLUMN_STAGGER[column % COLUMN_STAGGER.length]) * SHELF_STEP,
-        length: SHELF_LENGTH + Math.sin(k * 2.3 + 1.1) * SHELF_LENGTH_VARIATION,
+        length: SHELF_LENGTH,
       });
     }
   }
@@ -47,11 +47,8 @@ export function shelfLayout(): Shelf[] {
 }
 
 const SHELVES = shelfLayout();
-// Shoes fill the shelves from the top of the wall down, left to right along each level, so the
-// first pairs are the ones seen first. Changing the wall's size never loses a shoe.
 const SHELVES_IN_ORDER = [...SHELVES].sort((a, b) => b.y - a.y || a.x - b.x);
 
-/** A fixed shuffle (seeded), so filler shelves look random but are the same on every visit. */
 function shuffled<T>(items: T[], seed: number) {
   const out = [...items];
   let s = seed;
@@ -63,23 +60,16 @@ function shuffled<T>(items: T[], seed: number) {
   return out;
 }
 
-/**
- * What stands where: the catalog in order on the top shelves, then shuffled rounds of the same
- * shoes on any shelves left over, so the wall is always full. `shoe` indexes SHOES.
- */
 export const WALL_SLOTS = SHELVES_IN_ORDER.map((shelf, i) => {
   const round = Math.floor(i / SHOES.length);
   const order = round === 0 ? SHOES.map((_, k) => k) : shuffled(SHOES.map((_, k) => k), round * 7919);
   return { shelf, shoe: order[i % SHOES.length] };
 });
 
-/** The floating shelves, in deep brown wood, and the shoes on them; the wall is the scene's plain background. */
 type ShoeWallProps = {
   view: ShoeView;
-  /** The wall slot being viewed (its shoe off the shelf), or -1. See WALL_SLOTS. */
   viewing: number;
   onSelect: (index: number) => void;
-  /** The wall slot under the mouse, or -1. */
   onHover: (index: number) => void;
 };
 
@@ -89,6 +79,14 @@ export default function ShoeWall({ view, viewing, onSelect, onHover }: ShoeWallP
   const materials = useMemo(() => {
     const grain = createWoodGrain(gl.capabilities.getMaxAnisotropy());
     grain.repeat.set(2, 1);
+    const panel = (across: boolean) => {
+      const map = createPanelGrain(gl.capabilities.getMaxAnisotropy());
+      if (across) {
+        map.center.set(0.5, 0.5);
+        map.rotation = Math.PI / 2;
+      }
+      return new MeshPhysicalMaterial({ color: WOOD_COLOR, map, roughness: WOOD_ROUGHNESS, specularIntensity: WOOD_SPECULAR });
+    };
     return {
       wood: new MeshPhysicalMaterial({
         color: WOOD_COLOR,
@@ -96,22 +94,71 @@ export default function ShoeWall({ view, viewing, onSelect, onHover }: ShoeWallP
         roughness: WOOD_ROUGHNESS,
         specularIntensity: WOOD_SPECULAR,
       }),
+      caseUp: panel(false),
+      caseAcross: panel(true),
+      shadow: new MeshBasicMaterial({
+        map: createShadowTexture(),
+        transparent: true,
+        opacity: FLOOR_SHADOW_OPACITY,
+        depthWrite: false,
+        toneMapped: false,
+      }),
     };
   }, [gl]);
   useEffect(
-    () => () => {
-      materials.wood.map?.dispose();
-      materials.wood.dispose();
-    },
+    () => () =>
+      Object.values(materials).forEach((m) => {
+        m.map?.dispose();
+        m.dispose();
+      }),
     [materials],
+  );
+
+  const width = caseWidth();
+  const top = caseTop();
+  const inside = { bottom: CASE_BASE + CASE_PANEL, top: top - CASE_PANEL };
+  const board = (key: string, at: [number, number, number], size: [number, number, number], up: boolean) => (
+    <mesh key={key} position={at} material={up ? materials.caseUp : materials.caseAcross}>
+      <boxGeometry args={size} />
+    </mesh>
   );
 
   return (
     <group>
+      <mesh
+        position={[0, 0.002, CASE_DEPTH / 2]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        scale={[width + 0.4, CASE_DEPTH + 0.5, 1]}
+        material={materials.shadow}
+        renderOrder={-1}
+      >
+        <planeGeometry />
+      </mesh>
+      {[-1, 1].map((side) =>
+        board(`side${side}`, [(side * (width - CASE_PANEL)) / 2, top / 2, CASE_DEPTH / 2], [CASE_PANEL, top, CASE_DEPTH], true),
+      )}
+      {board("top", [0, top - CASE_PANEL / 2, CASE_DEPTH / 2], [width, CASE_PANEL, CASE_DEPTH], false)}
+      {board("bottom", [0, CASE_BASE + CASE_PANEL / 2, CASE_DEPTH / 2], [width - 2 * CASE_PANEL, CASE_PANEL, CASE_DEPTH], false)}
+      {board("plinth", [0, CASE_BASE / 2, CASE_DEPTH - 0.03], [width - 2 * CASE_PANEL, CASE_BASE, CASE_PANEL], false)}
+      {board(
+        "back",
+        [0, (inside.bottom + inside.top) / 2, CASE_BACK / 2],
+        [width - 2 * CASE_PANEL, inside.top - inside.bottom, CASE_BACK],
+        true,
+      )}
+      {Array.from({ length: COLUMNS - 1 }, (_, i) =>
+        board(
+          `divider${i}`,
+          [(i + 1 - COLUMNS / 2) * COLUMN_PITCH, (inside.bottom + inside.top) / 2, CASE_DEPTH / 2],
+          [CASE_PANEL, inside.top - inside.bottom, CASE_DEPTH],
+          true,
+        ),
+      )}
+
       {SHELVES.map((shelf) => (
         <mesh
           key={`${shelf.column}-${shelf.row}`}
-          position={[shelf.x, shelf.y, SHELF_DEPTH / 2]}
+          position={[shelf.x, shelf.y, CASE_BACK + SHELF_DEPTH / 2]}
           material={materials.wood}
         >
           <boxGeometry args={[shelf.length, SHELF_THICKNESS, SHELF_DEPTH]} />

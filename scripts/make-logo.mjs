@@ -1,5 +1,3 @@
-// Draws the Rick's Closet logo (a brown wooden hanger) and writes the logo and app icons.
-// Run with: node scripts/make-logo.mjs
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
@@ -54,13 +52,11 @@ await mkdir(path.join(root, "public", "logo"), { recursive: true });
 
 const transparent = Buffer.from(hangerSvg(null));
 await sharp(transparent).png().toFile(path.join(root, "public", "logo", "hanger.png"));
-// Browser tab icon: trimmed to the hanger so it fills the square at small sizes.
 await sharp(transparent)
   .trim({ background: { r: 0, g: 0, b: 0, alpha: 0 } })
   .resize(512, 512, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
   .png()
   .toFile(path.join(root, "app", "icon.png"));
-// iOS fills transparency with black, so the home-screen icon sits on the rack's background.
 await sharp(Buffer.from(hangerSvg("#ebe8e3"))).resize(180, 180).png().toFile(path.join(root, "app", "apple-icon.png"));
 
 console.log("wrote public/logo/hanger.png, app/icon.png, app/apple-icon.png");

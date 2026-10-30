@@ -1,20 +1,11 @@
-// Fits a cut-out shirt photo into the rack's 1024×1280 transparent frame: trims the empty border,
-// scales the sleeve span to the frame width, and puts the shoulders at the top edge.
-// Usage: npm run prepare-shirt -- <input.png> <output-name> [--remove-hanger]
-//   (writes public/shirts/<output-name>.webp)
-// --remove-hanger: for photos taken on a wooden hanger. Clears warm-tinted (wood) pixels in the top
-// quarter of the shirt, then keeps only the largest connected piece, which also drops the hook.
-// It won't recognise white, black or clear plastic hangers.
-// --match <front-name>: for a side view. Scales and places it so its height and top line up with
-// public/shirts/<front-name>.webp, so the rack can crossfade between the two without a jump.
 import path from "node:path";
 import sharp from "sharp";
 
 const W = 1024;
 const H = 1280;
-const SIDE_MARGIN = 20; // matches the placeholder shirts
+const SIDE_MARGIN = 20;
 const TOP_MARGIN = 24;
-const RIM_TOLERANCE = 45; // max brightness gap between an edge pixel and the fabric just inside it
+const RIM_TOLERANCE = 45;
 
 const args = process.argv.slice(2);
 const removeHanger = args.includes("--remove-hanger");
@@ -53,7 +44,6 @@ function removeWoodenHanger(px, width, height) {
     }
   }
 
-  // Keep the largest 4-connected opaque piece (the shirt); drop hooks and leftover specks.
   const label = new Int32Array(n).fill(-1);
   let best = -1;
   let bestSize = 0;
@@ -76,7 +66,6 @@ function removeWoodenHanger(px, width, height) {
     if (size > bestSize) [best, bestSize] = [id, size];
     id++;
   }
-  // Soft edge pixels count as part of the shirt when they touch it.
   const nearShirt = (i) => [i - 1, i + 1, i - width, i + width].some((q) => q >= 0 && q < n && label[q] === best);
   let dropped = 0;
   for (let i = 0; i < n; i++) {
@@ -89,7 +78,6 @@ function removeWoodenHanger(px, width, height) {
 
 cleanOutline(source.data, source.info.width, source.info.height);
 
-/** Square-window erosion/dilation of a 0/1 mask (separable). */
 function morph(mask, width, height, r, dilate) {
   const tmp = new Uint8Array(mask.length);
   const out = new Uint8Array(mask.length);
@@ -116,7 +104,6 @@ function morph(mask, width, height, r, dilate) {
   return out;
 }
 
-/** Keeps only the largest 8-connected piece of a 0/1 mask, in place. */
 function keepLargest(mask, width, height) {
   const label = new Int32Array(mask.length).fill(-1);
   let best = -1;
@@ -150,7 +137,6 @@ function keepLargest(mask, width, height) {
   for (let i = 0; i < mask.length; i++) if (label[i] !== best) mask[i] = 0;
 }
 
-/** City-block distance (capped) from each opaque pixel to the nearest transparent one. */
 function edgeDistance(mask, width, cap) {
   const dist = new Uint8Array(mask.length).fill(cap);
   let frontier = [];
@@ -176,11 +162,6 @@ function edgeDistance(mask, width, cap) {
   return dist;
 }
 
-/**
- * Cleans the outline left by background removal: drops specks and thin spurs, and drops edge
- * pixels whose brightness doesn't match the fabric just inside them (leftover background or
- * shadow, which shows as a pale or grey rim on the rack).
- */
 function cleanOutline(px, width, height) {
   const lum = (i) => (px[i * 4] + px[i * 4 + 1] + px[i * 4 + 2]) / 3;
   let mask = new Uint8Array(width * height);
@@ -196,8 +177,6 @@ function cleanOutline(px, width, height) {
       if (!mask[i] || dist[i] > 2) continue;
       const x = i % width;
       const y = Math.floor(i / width);
-      // Kept if it matches any fabric just inside it, so a trim colour (a cream collar on a
-      // black body) survives; leftover shadow or specks match nothing nearby.
       let closest = Infinity;
       for (let dy = -7; dy <= 7; dy++) {
         for (let dx = -7; dx <= 7; dx++) {
@@ -220,10 +199,6 @@ function cleanOutline(px, width, height) {
   console.log(`cleaned outline: ${rim} mismatched rim pixels removed`);
 }
 
-/**
- * Copies edge colours outward into transparent pixels (alpha stays 0), so texture filtering on
- * the GPU never blends the garment's edge with black and draws a dark or light halo.
- */
 function bleedColour(px, width, height, passes) {
   const filled = new Uint8Array(width * height);
   for (let i = 0; i < filled.length; i++) filled[i] = px[i * 4 + 3] >= 128 ? 1 : 0;
@@ -259,11 +234,6 @@ const trimmed = await sharp(source.data, { raw: source.info })
   .png()
   .toBuffer({ resolveWithObject: true });
 const { width: tw, height: th } = trimmed.info;
-/**
- * Opaque bounding box (top and height) of an already-prepared garment image. Rows narrower than
- * MIN_ROW don't count toward the top, so a hanger neck painted above the collar
- * (paint-hanger.mjs) doesn't move it.
- */
 async function opaqueExtent(file) {
   const MIN_ROW = 40;
   const { data, info } = await sharp(file).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
@@ -291,7 +261,6 @@ const framed = await sharp({ create: { width: W, height: H, channels: 4, backgro
   .raw()
   .toBuffer();
 bleedColour(framed, W, H, 12);
-// WebP is ~14× smaller than PNG here. `exact` keeps the colour bled under transparent pixels.
 await sharp(framed, { raw: { width: W, height: H, channels: 4 } })
   .webp({ quality: 90, alphaQuality: 100, exact: true, effort: 5 })
   .toFile(out);

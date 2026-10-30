@@ -13,10 +13,6 @@ const _plane = new Plane();
 const _normal = new Vector3();
 const _point = new Vector3();
 
-/**
- * Lets the pointer find shirts (hover and grab) and turns the pointer into a grab target. Only
- * simulated shirts can be picked, and only where their texture is opaque.
- */
 export function useShirtPicking(
   interaction: ShirtInteraction,
   cloth: RefObject<ClothSim | null>,
@@ -26,7 +22,6 @@ export function useShirtPicking(
   const gl = useThree((s) => s.gl);
   const camera = useThree((s) => s.camera);
 
-  // Pointer ray from client coordinates.
   const castRay = (clientX: number, clientY: number) => {
     const rect = gl.domElement.getBoundingClientRect();
     _ndc.set(((clientX - rect.left) / rect.width) * 2 - 1, -((clientY - rect.top) / rect.height) * 2 + 1);
@@ -50,7 +45,6 @@ export function useShirtPicking(
     return () => interaction.setPicker(null);
   });
 
-  /** Projects the pointer onto a camera-facing plane through the grab point, within reach. */
   function updateGrabTarget(grab: NonNullable<ShirtInteraction["grab"]>) {
     const mesh = slots.current[grab.id]?.front;
     if (!mesh || !cloth.current?.has(grab.id)) {
@@ -60,7 +54,7 @@ export function useShirtPicking(
     camera.getWorldDirection(_normal);
     _plane.setFromNormalAndCoplanarPoint(_normal, mesh.localToWorld(_point.copy(grab.anchor)));
     if (!castRay(interaction.clientX, interaction.clientY).ray.intersectPlane(_plane, _point)) return;
-    _point.addScaledVector(_normal, -GRAB_LIFT); // lift toward the camera
+    _point.addScaledVector(_normal, -GRAB_LIFT);
     mesh.worldToLocal(_point).sub(grab.anchor).clampLength(0, GRAB_MAX_REACH);
     grab.target.copy(grab.anchor).add(_point);
   }

@@ -3,7 +3,6 @@ import { BACKGROUND } from "./constants";
 
 type BagItemProps = { line: BagLine; onQuantity: (quantity: number) => void };
 
-/** One line in the bag: picture, name, size, quantity and line total. */
 export default function BagItem({ line, onQuantity }: BagItemProps) {
   const garment = itemOf(line);
   if (!garment) return null;
@@ -22,7 +21,7 @@ export default function BagItem({ line, onQuantity }: BagItemProps) {
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="truncate font-bold">{garment.name}</p>
-            <p className="text-sm text-stone-500">Size {line.size}</p>
+            <p className="text-sm text-stone-500">{line.size === "One size" ? line.size : `Size ${line.size}`}</p>
           </div>
           <p className="font-mono text-sm font-bold">{formatNaira(priceValue(garment.price) * line.quantity)}</p>
         </div>

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent } from "react";
+import { HoverIcon, ICONS, SPRING } from "../ui/hover";
 import BagDrop from "../rack/BagDrop";
 import SizeGuide from "../rack/SizeGuide";
 import SizePicker from "../rack/SizePicker";
@@ -7,9 +8,9 @@ import { WALL_COLOR } from "./constants";
 import type { ShoeConfig } from "./shoes";
 import type { ShoeView } from "./shoeView";
 
-const FADE_MS = 300; // the dim and panel fading in and out
-const ADDED_MS = 1600; // how long the button says "Added to bag"
-const THUMB_WIDTH = 240; // the bag's thumbnail of the shoe, px
+const FADE_MS = 300;
+const ADDED_MS = 1600;
+const THUMB_WIDTH = 240;
 
 type ShoeModalProps = {
   shoe: ShoeConfig;
@@ -18,7 +19,6 @@ type ShoeModalProps = {
   onClose: () => void;
 };
 
-/** A small copy of the capture for the bag, as a data URL (kept with the bag in the browser). */
 function thumbnail(capture: HTMLCanvasElement) {
   const canvas = document.createElement("canvas");
   canvas.width = THUMB_WIDTH;
@@ -27,11 +27,6 @@ function thumbnail(capture: HTMLCanvasElement) {
   return canvas.toDataURL("image/webp", 0.85);
 }
 
-/**
- * Shoe view: the shoe on a turntable, sizes, price and Add to bag. Like the clothes' modal, it's
- * not a native <dialog> (those always draw above the page): the 3D canvas, stacked above this,
- * draws the shoe itself on the turntable, so it stays live 3D. Drag the turntable to spin it.
- */
 export default function ShoeModal({ shoe, view, onAdd, onClose }: ShoeModalProps) {
   const turntable = useRef<HTMLDivElement>(null);
   const closeButton = useRef<HTMLButtonElement>(null);
@@ -47,11 +42,10 @@ export default function ShoeModal({ shoe, view, onAdd, onClose }: ShoeModalProps
   useEffect(() => {
     closeButton.current?.focus({ preventScroll: true });
     if (turntable.current) view.flyTo(turntable.current.getBoundingClientRect(), setCapture);
-    const frame = requestAnimationFrame(() => setShown(true)); // a frame at opacity 0, so it fades in
+    const frame = requestAnimationFrame(() => setShown(true));
     return () => cancelAnimationFrame(frame);
   }, [view]);
 
-  // Keep the 3D shoe on the turntable if it moves: the panel scrolls on small screens.
   const follow = () => {
     if (turntable.current && !closing.current) view.follow(turntable.current.getBoundingClientRect());
   };
@@ -82,7 +76,6 @@ export default function ShoeModal({ shoe, view, onAdd, onClose }: ShoeModalProps
     return () => window.removeEventListener("keydown", onKey);
   });
 
-  // Dragging the turntable spins the shoe (the canvas above it lets pointer events through).
   const spinStart = (e: PointerEvent<HTMLDivElement>) => {
     e.currentTarget.setPointerCapture(e.pointerId);
     drag.current = { x: e.clientX, t: e.timeStamp, speed: 0 };
@@ -131,7 +124,6 @@ export default function ShoeModal({ shoe, view, onAdd, onClose }: ShoeModalProps
       >
         <div className="grid grid-cols-[minmax(0,1fr)] md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
           <div className="flex flex-col items-center gap-3 px-6 pt-8 pb-5" style={{ background: WALL_COLOR }}>
-            {/* The turntable: the canvas above draws the shoe here. */}
             <div
               ref={turntable}
               role="img"
@@ -183,8 +175,9 @@ export default function ShoeModal({ shoe, view, onAdd, onClose }: ShoeModalProps
                     setAdded(true);
                   }
                 }}
-                className="w-full rounded-full bg-stone-900 py-3 text-sm font-bold text-white transition hover:bg-stone-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900 disabled:cursor-not-allowed disabled:bg-stone-900/25"
+                className={`flex w-full items-center justify-center rounded-full bg-stone-900 py-3 text-sm font-bold text-white ${SPRING} hover:bg-stone-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900 disabled:cursor-not-allowed disabled:bg-stone-900/25`}
               >
+                <HoverIcon>{ICONS.bagPlus}</HoverIcon>
                 {added ? "Added to bag ✓" : "Add to bag"}
               </button>
               <p className="mt-2 h-4 text-center text-xs text-stone-500" aria-live="polite">
@@ -199,7 +192,7 @@ export default function ShoeModal({ shoe, view, onAdd, onClose }: ShoeModalProps
           type="button"
           onClick={close}
           aria-label="Close"
-          className="absolute top-4 right-4 grid size-10 place-items-center rounded-full text-xl text-stone-700 transition hover:bg-stone-900/5 focus-visible:outline-2 focus-visible:outline-stone-900"
+          className="absolute top-4 right-4 grid size-10 place-items-center rounded-full text-xl text-stone-700 transition-[rotate,background-color] duration-300 ease-[cubic-bezier(0.34,1.2,0.64,1)] hover:rotate-90 hover:bg-stone-900/5 motion-reduce:hover:rotate-0 focus-visible:outline-2 focus-visible:outline-stone-900"
         >
           ×
         </button>
