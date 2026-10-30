@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { HoverIcon, ICONS, SPRING } from "../ui/hover";
 import BagDrop from "../rack/BagDrop";
 import { BACKGROUND } from "../rack/constants";
@@ -10,6 +10,7 @@ const ADDED_MS = 1600;
 const WATCH_DROP_W = 80;
 const ARM_DELAY_MS = 0;
 const ARM_FADE_MS = 200;
+const MOBILE_LIFT = 5;
 
 const pct = (value: number, of: number) => `${(value / of) * 100}%`;
 
@@ -27,6 +28,7 @@ export default function WatchModal({
   onClose,
 }: WatchModalProps) {
   const picture = useRef<HTMLImageElement>(null);
+  const armPicture = useRef<HTMLImageElement>(null);
   const closeButton = useRef<HTMLButtonElement>(null);
   const [shown, setShown] = useState(false);
   const [onWrist, setOnWrist] = useState(false);
@@ -41,17 +43,16 @@ export default function WatchModal({
     closeButton.current?.focus({ preventScroll: true });
     let cancelled = false;
     const img = picture.current;
-    img
-      ?.decode()
-      .catch(() => {})
-      .then(() => {
-        if (cancelled || !img) return;
-        view.flyTo(img.getBoundingClientRect(), (settled) => {
-          setCapture(settled);
-          setOnWrist(true);
-          setArmShown(true);
-        });
+    Promise.all(
+      [img, armPicture.current].map((el) => el?.decode().catch(() => {})),
+    ).then(() => {
+      if (cancelled || !img) return;
+      view.flyTo(img.getBoundingClientRect(), (settled) => {
+        setCapture(settled);
+        setOnWrist(true);
+        setArmShown(true);
       });
+    });
     closeButton.current?.getBoundingClientRect();
     const frame = requestAnimationFrame(() => setShown(true));
     return () => {
@@ -107,10 +108,11 @@ export default function WatchModal({
   const { crop } = ARM;
   const watchBox = {
     left: pct(ARM.wrist.x, ARM.width),
-    top: pct(ARM.wrist.y, ARM.height),
+    "--wrist-top": pct(ARM.wrist.y, ARM.height),
+    "--wrist-top-sm": pct(ARM.wrist.y - MOBILE_LIFT, ARM.height),
     width: pct(watchPx, ARM.width),
     transform: "translate(-50%, -50%)",
-  };
+  } as CSSProperties;
 
   return (
     <div
@@ -155,6 +157,7 @@ export default function WatchModal({
             >
               {/* eslint-disable-next-line @next/next/no-img-element -- positioned by percentages, and masked by itself */}
               <img
+                ref={armPicture}
                 src={ARM.image}
                 alt=""
                 className={`absolute inset-0 h-full w-full transition-opacity motion-reduce:transition-none ${armShown ? "opacity-100" : "opacity-0"}`}
@@ -172,7 +175,7 @@ export default function WatchModal({
                   ref={picture}
                   src={watch.image}
                   alt={`${watch.name}, on the wrist`}
-                  className="absolute max-w-none drop-shadow-[0_6px_6px_rgba(0,0,0,0.45)]"
+                  className="absolute top-(--wrist-top-sm) max-w-none drop-shadow-[0_6px_6px_rgba(0,0,0,0.45)] md:top-(--wrist-top)"
                   style={{
                     ...watchBox,
                     visibility: capture ? "hidden" : "inherit",
@@ -181,7 +184,7 @@ export default function WatchModal({
                 <canvas
                   ref={captureCanvas}
                   aria-hidden
-                  className="absolute h-auto max-w-none drop-shadow-[0_6px_6px_rgba(0,0,0,0.45)]"
+                  className="absolute top-(--wrist-top-sm) h-auto max-w-none drop-shadow-[0_6px_6px_rgba(0,0,0,0.45)] md:top-(--wrist-top)"
                   style={{
                     ...watchBox,
                     visibility: capture ? "inherit" : "hidden",
