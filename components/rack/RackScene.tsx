@@ -16,7 +16,7 @@ import RackOverlay from "./RackOverlay";
 import RackLoading from "./RackLoading";
 import RackSounds from "./RackSounds";
 import { useRackSound } from "./rackSound";
-import HomeLink from "./HomeLink";
+import RoomNav from "./RoomNav";
 import SoundToggle from "./SoundToggle";
 import { INITIAL_INDEX, SHIRTS } from "./shirts";
 import { useRackControls } from "./useRackControls";
@@ -188,7 +188,7 @@ export default function RackScene() {
           onView={openView}
         />
 
-        <HomeLink />
+        <RoomNav current="clothes" />
         <SoundToggle sound={sound} />
         <BagButton count={bag.count} onOpen={() => setBagOpen(true)} />
       </div>

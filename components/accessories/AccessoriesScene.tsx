@@ -7,7 +7,7 @@ import { MathUtils, NeutralToneMapping, Vector3, type PerspectiveCamera } from "
 import { useBag } from "../rack/bag";
 import BagButton from "../rack/BagButton";
 import BagDrawer from "../rack/BagDrawer";
-import HomeLink from "../rack/HomeLink";
+import RoomNav from "../rack/RoomNav";
 import RackLoading from "../rack/RackLoading";
 import { BACKGROUND, ENV_INTENSITY, ENV_MAP, KEY_LIGHT_COLOR, KEY_LIGHT_INTENSITY } from "../rack/constants";
 import { BOX_HEIGHT, boxSize, LAYOUTS, LID_OPEN_DEG, LID_THICKNESS, SIDEBOARD, SIDEBOARD_WALL_Z, type BoxLayout } from "./constants";
@@ -240,7 +240,7 @@ export default function AccessoriesScene() {
       </div>
 
       <div inert={mode !== "closed"} className={`transition-opacity duration-300 ${mode === "closed" ? "" : "opacity-0"}`}>
-        <HomeLink />
+        <RoomNav current="watches" />
         <BagButton count={bag.count} onOpen={() => setBagOpen(true)} />
       </div>
       {bagOpen && <BagDrawer bag={bag} onClose={() => setBagOpen(false)} />}

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Environment } from "@react-three/drei";
 import { MathUtils, NeutralToneMapping, Vector3, type PerspectiveCamera } from "three";
-import { HoverIcon, ICONS, SPRING } from "../ui/hover";
+import { HoverIcon, ROOM_ICONS, SPRING } from "../ui/hover";
 import RackLoading from "../rack/RackLoading";
 import {
   BACKGROUND,
@@ -43,8 +43,6 @@ import FloorCutout from "./FloorCutout";
 import RingLight from "./RingLight";
 import Surroundings from "./Surroundings";
 import Wardrobe, { progress, PUSH_TARGETS } from "./Wardrobe";
-
-const ROOM_ICONS: Record<Room, ReactNode> = { clothes: ICONS.hanger, shoes: ICONS.shoe, watches: ICONS.watch };
 
 type Phase = "closed" | "opening" | "inside";
 

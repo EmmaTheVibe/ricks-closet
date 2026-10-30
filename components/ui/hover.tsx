@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { Room } from "../home/constants";
 
 const EASE = "ease-[cubic-bezier(0.34,1.2,0.64,1)]";
 
@@ -21,14 +22,18 @@ const stroke = { fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeL
 export const ICONS = {
   hanger: (
     <svg viewBox="0 0 24 24" className="size-4" aria-hidden {...stroke}>
-      <path d="M10.4 6.2a1.6 1.6 0 1 1 1.6 1.6v1.4" />
-      <path d="M12 9.2 3.5 15.5h17z" />
+      <g transform="translate(0 2)">
+        <path d="M10.4 6.2a1.6 1.6 0 1 1 1.6 1.6v1.4" />
+        <path d="M12 9.2 3.5 15.5h17z" />
+      </g>
     </svg>
   ),
   shoe: (
     <svg viewBox="0 0 24 24" className="size-4" aria-hidden {...stroke}>
-      <path d="M3 15.5V9.5h4.5l2.5 3 4 1.2c3.5.9 7 1.6 7 3.3v.5H3z" />
-      <path d="M9.5 12.5 8 14M12 13.2l-1 1.4" />
+      <g transform="translate(0 -1.5)">
+        <path d="M3 15.5V9.5h4.5l2.5 3 4 1.2c3.5.9 7 1.6 7 3.3v.5H3z" />
+        <path d="M9.5 12.5 8 14M12 13.2l-1 1.4" />
+      </g>
     </svg>
   ),
   watch: (
@@ -63,3 +68,5 @@ export const ICONS = {
     </svg>
   ),
 };
+
+export const ROOM_ICONS: Record<Room, ReactNode> = { clothes: ICONS.hanger, shoes: ICONS.shoe, watches: ICONS.watch };

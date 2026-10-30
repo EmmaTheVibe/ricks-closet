@@ -7,7 +7,7 @@ import { MathUtils, NeutralToneMapping, type Group, type PerspectiveCamera } fro
 import { useBag } from "../rack/bag";
 import BagButton from "../rack/BagButton";
 import BagDrawer from "../rack/BagDrawer";
-import HomeLink from "../rack/HomeLink";
+import RoomNav from "../rack/RoomNav";
 import RackLoading from "../rack/RackLoading";
 import Sign from "../rack/Sign";
 import {
@@ -214,7 +214,7 @@ export default function ShoeScene() {
       </div>
 
       <div inert={mode !== "closed"} className={`transition-opacity duration-300 ${mode === "closed" ? "" : "opacity-0"}`}>
-        <HomeLink />
+        <RoomNav current="shoes" />
         <BagButton count={bag.count} onOpen={() => setBagOpen(true)} />
       </div>
       {bagOpen && <BagDrawer bag={bag} onClose={() => setBagOpen(false)} />}
