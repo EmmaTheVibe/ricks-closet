@@ -1,3 +1,6 @@
+import { SHIRTS } from "../rack/shirts";
+import { SHOES } from "../shoes/shoes";
+
 export const WARDROBE_WIDTH = 1.5;
 export const WARDROBE_HEIGHT = 2.2;
 export const WARDROBE_DEPTH = 0.6;
@@ -44,6 +47,8 @@ export const HANG_LAYER = 0.004;
 export const STEP_WIDTH = 0.5;
 export const STEP_TOP = 0.68;
 export const SHOE_ID = "air-jordan-1-mid";
+export const HOME_SHOE = SHOES.find((s) => s.id === SHOE_ID) ?? SHOES[0];
+export const SIDE_SHIRTS = SHIRTS.filter((s) => s.side && (s.kind ?? "shirt") === "shirt");
 export const SHOE_TURN_DEG = 20;
 export const SHOE_Z = -0.25;
 

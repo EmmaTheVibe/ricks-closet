@@ -26,11 +26,9 @@ import {
   SHIRT_WIDTH,
 } from "../rack/constants";
 import { buildHook } from "../rack/hangers";
-import { SHIRTS } from "../rack/shirts";
 import { createShadowTexture } from "../rack/textures";
 import { SHELF_THICKNESS, VIEW_ANGLE_DEG, WOOD_ROUGHNESS, WOOD_SPECULAR } from "../shoes/constants";
 import ShoePair from "../shoes/ShoePair";
-import { SHOES } from "../shoes/shoes";
 import Bag from "./Bag";
 import { createBrandMark, createPanelGrain } from "./textures";
 import {
@@ -49,6 +47,7 @@ import {
   DOORS_TIME,
   HANG_LAYER,
   HANG_SPACING,
+  HOME_SHOE,
   INNER_BOTTOM,
   INNER_HALF_WIDTH,
   INNER_TOP,
@@ -56,11 +55,11 @@ import {
   OUTER_WOOD,
   PANEL,
   PLINTH,
-  SHOE_ID,
   SHOE_TURN_DEG,
   SHOE_Z,
   SHOES_PUSH,
   SHOES_RAISE,
+  SIDE_SHIRTS,
   STEP_TOP,
   STEP_WIDTH,
   WARDROBE_DEPTH,
@@ -85,8 +84,6 @@ const PULL_Y = 1.1;
 const PULL_LENGTH = 0.32;
 const ASTRAGAL = 0.024;
 
-const SIDE_SHIRTS = SHIRTS.filter((s) => s.side && (s.kind ?? "shirt") === "shirt");
-const SHOE = SHOES.find((s) => s.id === SHOE_ID) ?? SHOES[0];
 const SHOE_SHELF = { column: 0, row: 0, x: 0, y: -SHELF_THICKNESS / 2, length: 0 };
 const PAIR_MIDDLE = 0.035;
 const { width: BOX_WIDTH, depth: BOX_DEPTH } = boxSize(LAYOUTS.wide);
@@ -419,7 +416,7 @@ export default function Wardrobe({ clock, enabled, onHover, onGo }: WardrobeProp
           rotation={[0, -MathUtils.degToRad(SHOE_TURN_DEG), 0]}
         >
           <ShoePair
-            shoe={SHOE}
+            shoe={HOME_SHOE}
             shelf={SHOE_SHELF}
             lifted={false}
             frontRef={() => {}}
