@@ -4,6 +4,7 @@ import { MeshBasicMaterial, MeshPhysicalMaterial, MeshStandardMaterial } from "t
 import { createPanelGrain } from "../home/textures";
 import { FLOOR_SHADOW_OPACITY } from "../rack/constants";
 import { createShadowTexture } from "../rack/textures";
+import { timed } from "../rack/timing";
 import { WOOD_ROUGHNESS, WOOD_SPECULAR } from "../shoes/constants";
 import { BRASS, MARBLE, SIDEBOARD, SIDEBOARD_WOOD } from "./constants";
 import { createMarble } from "./textures";
@@ -22,7 +23,7 @@ export default function Sideboard() {
   const gl = useThree((s) => s.gl);
   const materials = useMemo(() => {
     const wood = (across: boolean) => {
-      const map = createPanelGrain(gl.capabilities.getMaxAnisotropy());
+      const map = timed("sideboard wood texture", () => createPanelGrain(gl.capabilities.getMaxAnisotropy()));
       if (across) {
         map.center.set(0.5, 0.5);
         map.rotation = Math.PI / 2;
@@ -31,7 +32,7 @@ export default function Sideboard() {
     };
     return {
       marble: new MeshPhysicalMaterial({
-        map: createMarble(MARBLE, W / D),
+        map: timed("marble texture", () => createMarble(MARBLE, W / D)),
         roughness: 0.45,
         clearcoat: 0.25,
         clearcoatRoughness: 0.3,

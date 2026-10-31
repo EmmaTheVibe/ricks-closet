@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { ExtrudeGeometry, MathUtils, MeshPhysicalMaterial, MeshStandardMaterial, Path, Shape, ShapeGeometry, DoubleSide } from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
+import { timed } from "../rack/timing";
 import {
   BOX_HEIGHT,
   boxSize,
@@ -70,8 +71,8 @@ export default function WatchBox({ layout, view, onSelect, onHover }: WatchBoxPr
   const { width, depth } = boxSize(layout);
 
   const materials = useMemo(() => {
-    const leather = createLeatherGrain();
-    const suede = createSuedeNap();
+    const leather = timed("leather texture", createLeatherGrain);
+    const suede = timed("suede texture", createSuedeNap);
     return {
       leather: new MeshPhysicalMaterial({
         color: LEATHER_COLOR,
@@ -98,7 +99,7 @@ export default function WatchBox({ layout, view, onSelect, onHover }: WatchBoxPr
   const lidLining = useMemo(() => {
     const innerW = width - 2 * WALL;
     const innerD = depth - 2 * WALL;
-    const map = createLidLining(innerW, innerD, SUEDE_COLOR);
+    const map = timed("lid lining texture", () => createLidLining(innerW, innerD, SUEDE_COLOR));
     map.repeat.set(1 / innerW, 1 / innerD);
     map.offset.set(0.5, 0.5);
     return new MeshStandardMaterial({ map, roughness: 0.9, bumpMap: materials.suede.bumpMap, bumpScale: 0.5 });

@@ -8,7 +8,7 @@ import { Environment } from "@react-three/drei";
 import { MathUtils, NeutralToneMapping, Vector3, type PerspectiveCamera } from "three";
 import { HoverIcon, ROOM_ICONS, SPRING } from "../ui/hover";
 import RackLoading from "../rack/RackLoading";
-import { mark, SceneTiming, TimingProbe } from "../rack/timing";
+import { mark, SceneTiming, TimingMark, TimingProbe } from "../rack/timing";
 import {
   BACKGROUND,
   CAMERA_FOV,
@@ -216,6 +216,7 @@ export default function WardrobeScene({ fallback }: { fallback: ReactNode }) {
           <directionalLight position={[-2.5, 4, 3]} intensity={KEY_LIGHT_INTENSITY} color={KEY_LIGHT_COLOR} />
 
           <Suspense fallback={null}>
+            <TimingMark />
             <Environment files={ENV_MAP} environmentIntensity={ENV_INTENSITY} />
             <Wardrobe clock={clock} enabled={inside} onHover={hover} onGo={go} />
             <FloorCutout

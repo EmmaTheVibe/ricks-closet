@@ -9,7 +9,7 @@ import BagButton from "../rack/BagButton";
 import BagDrawer from "../rack/BagDrawer";
 import RoomNav from "../rack/RoomNav";
 import RackLoading from "../rack/RackLoading";
-import { mark, SceneTiming, SHADOWS, TimingProbe } from "../rack/timing";
+import { mark, SceneTiming, SHADOWS, TimingMark, TimingProbe } from "../rack/timing";
 import { BACKGROUND, ENV_INTENSITY, ENV_MAP, KEY_LIGHT_COLOR, KEY_LIGHT_INTENSITY } from "../rack/constants";
 import { BOX_HEIGHT, boxSize, LAYOUTS, LID_OPEN_DEG, LID_THICKNESS, SIDEBOARD, SIDEBOARD_WALL_Z, type BoxLayout } from "./constants";
 import Surroundings from "../home/Surroundings";
@@ -226,6 +226,7 @@ export default function AccessoriesScene() {
             shadow-camera-bottom={-0.4}
           />
           <Suspense fallback={null}>
+            <TimingMark />
             <Environment files={ENV_MAP} environmentIntensity={ENV_INTENSITY} />
             <Room view={view} onSelect={openView} onHover={hover} />
             <ViewDriver view={view} />

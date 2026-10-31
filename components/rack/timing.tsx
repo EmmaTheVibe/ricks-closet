@@ -15,11 +15,25 @@ const listeners = new Set<() => void>();
 
 function push(label: string, at: number, note = "") {
   state = { ...state, marks: [...state.marks, { label, at, note }] };
-  listeners.forEach((listener) => listener());
+  queueMicrotask(() => listeners.forEach((listener) => listener()));
 }
 
 export function mark(label: string, note?: string) {
   if (TIMING) push(label, performance.now(), note);
+}
+
+export function timed<T>(label: string, build: () => T): T {
+  if (!TIMING) return build();
+  const start = performance.now();
+  const result = build();
+  push(label, start, `${Math.round(performance.now() - start)} ms`);
+  return result;
+}
+
+export function TimingMark() {
+  useLayoutEffect(() => mark("render done"), []);
+  useEffect(() => mark("effects start"), []);
+  return null;
 }
 
 function startScene() {
