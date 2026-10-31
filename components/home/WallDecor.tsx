@@ -4,12 +4,12 @@ import {
   DoubleSide,
   ExtrudeGeometry,
   MeshBasicMaterial,
-  MeshPhysicalMaterial,
   MeshStandardMaterial,
   Path,
   Shape,
   SRGBColorSpace,
 } from "three";
+import { physicalMaterial } from "../rack/device";
 import { BRASS, SKIRTING_COLOR } from "./constants";
 
 const PANEL_WIDTH = 0.65;
@@ -71,7 +71,7 @@ export default function WallDecor({ clear, sconcePanel }: WallDecorLayout) {
       upper: frameGeometry(PANEL_WIDTH, UPPER.top - UPPER.bottom),
       trim: new MeshStandardMaterial({ color: SKIRTING_COLOR, roughness: 0.6 }),
       brass: new MeshStandardMaterial({ color: BRASS, metalness: 1, roughness: 0.3 }),
-      glass: new MeshPhysicalMaterial({
+      glass: physicalMaterial({
         color: "#f0cf9c",
         emissive: "#ffb766",
         emissiveIntensity: 0.55,

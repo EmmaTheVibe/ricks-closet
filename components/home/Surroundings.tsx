@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { useThree } from "@react-three/fiber";
-import { MeshBasicMaterial, MeshPhysicalMaterial, MeshStandardMaterial } from "three";
+import { MeshBasicMaterial, MeshStandardMaterial } from "three";
+import { physicalMaterial } from "../rack/device";
 import { createShadowTexture } from "../rack/textures";
 import { WOOD_ROUGHNESS, WOOD_SPECULAR } from "../shoes/constants";
 import {
@@ -35,7 +36,7 @@ export default function Surroundings({ wallZ, halo, decor }: SurroundingsProps) 
     return {
       wall: new MeshBasicMaterial({ color: PLASTER, toneMapped: false }),
       skirting: new MeshStandardMaterial({ color: SKIRTING_COLOR, roughness: 0.6 }),
-      floor: new MeshPhysicalMaterial({
+      floor: physicalMaterial({
         map: boards.map,
         bumpMap: boards.bump,
         bumpScale: FLOOR_BUMP,

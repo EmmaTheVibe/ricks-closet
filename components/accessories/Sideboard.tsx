@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { useThree } from "@react-three/fiber";
-import { MeshBasicMaterial, MeshPhysicalMaterial, MeshStandardMaterial } from "three";
+import { MeshBasicMaterial, MeshStandardMaterial } from "three";
+import { physicalMaterial } from "../rack/device";
 import { createPanelGrain } from "../home/textures";
 import { FLOOR_SHADOW_OPACITY } from "../rack/constants";
 import { createShadowTexture } from "../rack/textures";
@@ -28,10 +29,10 @@ export default function Sideboard() {
         map.center.set(0.5, 0.5);
         map.rotation = Math.PI / 2;
       }
-      return new MeshPhysicalMaterial({ color: SIDEBOARD_WOOD, map, roughness: WOOD_ROUGHNESS, specularIntensity: WOOD_SPECULAR });
+      return physicalMaterial({ color: SIDEBOARD_WOOD, map, roughness: WOOD_ROUGHNESS, specularIntensity: WOOD_SPECULAR });
     };
     return {
-      marble: new MeshPhysicalMaterial({
+      marble: physicalMaterial({
         map: timed("marble texture", () => createMarble(MARBLE, W / D)),
         roughness: 0.45,
         clearcoat: 0.25,

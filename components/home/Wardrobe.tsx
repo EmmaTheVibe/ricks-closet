@@ -6,7 +6,6 @@ import {
   ExtrudeGeometry,
   MathUtils,
   MeshBasicMaterial,
-  MeshPhysicalMaterial,
   MeshStandardMaterial,
   Shape,
   SRGBColorSpace,
@@ -25,6 +24,7 @@ import {
   SHIRT_HEIGHT,
   SHIRT_WIDTH,
 } from "../rack/constants";
+import { physicalMaterial } from "../rack/device";
 import { buildHook } from "../rack/hangers";
 import { createShadowTexture } from "../rack/textures";
 import { SHELF_THICKNESS, VIEW_ANGLE_DEG, WOOD_ROUGHNESS, WOOD_SPECULAR } from "../shoes/constants";
@@ -197,7 +197,7 @@ function ClosetRail() {
 
 type DoorsProps = {
   clock: RefObject<number>;
-  wood: { up: MeshPhysicalMaterial; across: MeshPhysicalMaterial };
+  wood: { up: MeshStandardMaterial; across: MeshStandardMaterial };
   brass: MeshStandardMaterial;
 };
 
@@ -277,7 +277,7 @@ function Doors({ clock, wood, brass }: DoorsProps) {
   );
 }
 
-function Board({ at, size, material }: { at: [number, number, number]; size: [number, number, number]; material: MeshPhysicalMaterial }) {
+function Board({ at, size, material }: { at: [number, number, number]; size: [number, number, number]; material: MeshStandardMaterial }) {
   return (
     <mesh position={at} material={material}>
       <boxGeometry args={size} />
@@ -304,7 +304,7 @@ export default function Wardrobe({ clock, enabled, onHover, onGo }: WardrobeProp
         grain.center.set(0.5, 0.5);
         grain.rotation = Math.PI / 2;
       }
-      return new MeshPhysicalMaterial({ color, map: grain, roughness: WOOD_ROUGHNESS, specularIntensity: WOOD_SPECULAR });
+      return physicalMaterial({ color, map: grain, roughness: WOOD_ROUGHNESS, specularIntensity: WOOD_SPECULAR });
     };
     return {
       outer: wood(OUTER_WOOD),

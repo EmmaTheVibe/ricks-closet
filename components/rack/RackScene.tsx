@@ -19,6 +19,7 @@ import { useRackSound } from "./rackSound";
 import RoomNav from "./RoomNav";
 import SoundToggle from "./SoundToggle";
 import { mark, SceneTiming, SHADOWS, TimingProbe } from "./timing";
+import { DPR } from "./device";
 import { INITIAL_INDEX, SHIRTS } from "./shirts";
 import { useRackControls } from "./useRackControls";
 import { ShirtInteraction, usePointerTracking } from "./interaction";
@@ -134,7 +135,7 @@ export default function RackScene() {
       >
         <Canvas
           shadows={SHADOWS}
-          dpr={[1, 2]}
+          dpr={DPR}
           frameloop={onScreen ? "always" : "never"}
           style={{ pointerEvents: view === "closed" ? "auto" : "none" }}
           camera={{ fov: CAMERA_FOV, position: CAMERA_POSITION }}

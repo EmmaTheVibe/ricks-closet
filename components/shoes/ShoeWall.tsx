@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { useThree } from "@react-three/fiber";
-import { MeshBasicMaterial, MeshPhysicalMaterial } from "three";
+import { MeshBasicMaterial } from "three";
+import { physicalMaterial } from "../rack/device";
 import { createPanelGrain } from "../home/textures";
 import { FLOOR_SHADOW_OPACITY } from "../rack/constants";
 import { createShadowTexture, createWoodGrain } from "../rack/textures";
@@ -85,10 +86,10 @@ export default function ShoeWall({ view, viewing, onSelect, onHover }: ShoeWallP
         map.center.set(0.5, 0.5);
         map.rotation = Math.PI / 2;
       }
-      return new MeshPhysicalMaterial({ color: WOOD_COLOR, map, roughness: WOOD_ROUGHNESS, specularIntensity: WOOD_SPECULAR });
+      return physicalMaterial({ color: WOOD_COLOR, map, roughness: WOOD_ROUGHNESS, specularIntensity: WOOD_SPECULAR });
     };
     return {
-      wood: new MeshPhysicalMaterial({
+      wood: physicalMaterial({
         color: WOOD_COLOR,
         map: grain,
         roughness: WOOD_ROUGHNESS,

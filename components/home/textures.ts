@@ -1,8 +1,12 @@
 import { CanvasTexture, NoColorSpace, RepeatWrapping, SRGBColorSpace } from "three";
+import { LOW_MEMORY } from "../rack/device";
 
 const SIZE = { width: 1024, height: 2048 };
 export const DETAIL =
-  typeof window !== "undefined" && window.matchMedia("(pointer: coarse) and (max-width: 1024px)").matches ? 0.5 : 1;
+  LOW_MEMORY ||
+  (typeof window !== "undefined" && window.matchMedia("(pointer: coarse) and (max-width: 1024px)").matches)
+    ? 0.5
+    : 1;
 export const BOARDS_ACROSS = 8;
 const SEAM = 3;
 

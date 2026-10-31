@@ -4,7 +4,6 @@ import {
   ExtrudeGeometry,
   MathUtils,
   MeshBasicMaterial,
-  MeshPhysicalMaterial,
   MeshStandardMaterial,
   Path,
   Quaternion,
@@ -14,6 +13,7 @@ import {
   Vector3,
 } from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
+import { physicalMaterial } from "../rack/device";
 import { createShadowTexture } from "../rack/textures";
 import { SKIRTING_DEPTH, SKIRTING_HEIGHT } from "./constants";
 
@@ -119,7 +119,7 @@ export default function RingLight({ x, z, wallZ, turnDeg }: RingLightProps) {
         false,
       ),
       metal: new MeshStandardMaterial({ color: "#1b1b1b", roughness: 0.5, metalness: 0.3 }),
-      diffuser: new MeshPhysicalMaterial({
+      diffuser: physicalMaterial({
         color: "#f6f5f2",
         roughness: 0.35,
         clearcoat: 1,

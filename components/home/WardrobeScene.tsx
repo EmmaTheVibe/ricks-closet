@@ -9,6 +9,7 @@ import { MathUtils, NeutralToneMapping, Vector3, type PerspectiveCamera } from "
 import { HoverIcon, ROOM_ICONS, SPRING } from "../ui/hover";
 import RackLoading from "../rack/RackLoading";
 import { mark, SceneTiming, TimingMark, TimingProbe } from "../rack/timing";
+import { DPR } from "../rack/device";
 import {
   BACKGROUND,
   CAMERA_FOV,
@@ -201,7 +202,7 @@ export default function WardrobeScene({ fallback }: { fallback: ReactNode }) {
       <SceneTiming />
       <div className="absolute inset-0 select-none">
         <Canvas
-          dpr={[1, 2]}
+          dpr={DPR}
           camera={{ fov: CAMERA_FOV, position: [0, EYE_Y, 6] }}
           onCreated={({ gl }) => {
             mark("webgl ready");

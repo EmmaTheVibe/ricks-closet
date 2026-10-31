@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useSyncExternalStore } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Texture, type Material, type Mesh, type Object3D, type WebGLRenderer } from "three";
+import { LOW_MEMORY } from "./device";
 
 const params = typeof window === "undefined" ? null : new URLSearchParams(window.location.search);
 export const NO_SHADOWS = params?.has("noshadows") ?? false;
@@ -150,7 +151,10 @@ export function SceneTiming() {
 
   return (
     <div className="pointer-events-none absolute bottom-2 left-2 z-50 max-w-[calc(100%-1rem)] rounded-lg bg-stone-900/85 p-2 font-mono text-[10px] leading-snug text-white">
-      <p className="font-bold">timing{NO_SHADOWS ? " · shadows off" : ""}</p>
+      <p className="font-bold">
+        timing{LOW_MEMORY ? " · low ram" : ""}
+        {NO_SHADOWS ? " · shadows off" : ""}
+      </p>
       {[...marks]
         .sort((a, b) => a.at - b.at)
         .map((m, i) => (

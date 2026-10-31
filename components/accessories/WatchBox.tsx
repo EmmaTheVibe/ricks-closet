@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from "react";
-import { ExtrudeGeometry, MathUtils, MeshPhysicalMaterial, MeshStandardMaterial, Path, Shape, ShapeGeometry, DoubleSide } from "three";
+import { ExtrudeGeometry, MathUtils, MeshStandardMaterial, Path, Shape, ShapeGeometry, DoubleSide } from "three";
+import { flat, physicalMaterial } from "../rack/device";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { timed } from "../rack/timing";
 import {
@@ -75,16 +76,16 @@ export default function WatchBox({ layout, view, images, onSelect, onHover }: Wa
     const leather = timed("leather texture", createLeatherGrain);
     const suede = timed("suede texture", createSuedeNap);
     return {
-      leather: new MeshPhysicalMaterial({
+      leather: physicalMaterial({
         color: LEATHER_COLOR,
         roughness: 0.75,
         specularIntensity: 0.35,
         bumpMap: leather,
         bumpScale: 0.45,
       }),
-      frame: new MeshStandardMaterial({ color: FRAME_COLOR, roughness: 0.9, bumpMap: suede, bumpScale: 0.6 }),
-      suede: new MeshStandardMaterial({ color: SUEDE_COLOR, roughness: 1, bumpMap: suede, bumpScale: 0.8, side: DoubleSide }),
-      cushion: new MeshStandardMaterial({ color: CUSHION_COLOR, roughness: 1, bumpMap: suede, bumpScale: 0.8 }),
+      frame: new MeshStandardMaterial(flat({ color: FRAME_COLOR, roughness: 0.9, bumpMap: suede, bumpScale: 0.6 })),
+      suede: new MeshStandardMaterial(flat({ color: SUEDE_COLOR, roughness: 1, bumpMap: suede, bumpScale: 0.8, side: DoubleSide })),
+      cushion: new MeshStandardMaterial(flat({ color: CUSHION_COLOR, roughness: 1, bumpMap: suede, bumpScale: 0.8 })),
       metal: new MeshStandardMaterial({ color: METAL_COLOR, metalness: 1, roughness: 0.25 }),
     };
   }, []);

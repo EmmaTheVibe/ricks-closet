@@ -10,6 +10,7 @@ import BagDrawer from "../rack/BagDrawer";
 import RoomNav from "../rack/RoomNav";
 import RackLoading from "../rack/RackLoading";
 import { mark, SceneTiming, SHADOWS, TimingMark, TimingProbe } from "../rack/timing";
+import { DPR } from "../rack/device";
 import { BACKGROUND, ENV_INTENSITY, ENV_MAP, KEY_LIGHT_COLOR, KEY_LIGHT_INTENSITY } from "../rack/constants";
 import { BOX_HEIGHT, boxSize, LAYOUTS, LID_OPEN_DEG, LID_THICKNESS, SIDEBOARD, SIDEBOARD_WALL_Z, type BoxLayout } from "./constants";
 import Surroundings from "../home/Surroundings";
@@ -196,7 +197,7 @@ export default function AccessoriesScene() {
       <div className={`absolute inset-0 select-none ${mode === "closed" ? "" : "pointer-events-none"}`}>
         <Canvas
           shadows={SHADOWS}
-          dpr={[1, 2]}
+          dpr={DPR}
           style={{ pointerEvents: mode === "closed" ? "auto" : "none" }}
           camera={{ fov: CAMERA_FOV, position: [0, 1, 0] }}
           onCreated={({ gl }) => {

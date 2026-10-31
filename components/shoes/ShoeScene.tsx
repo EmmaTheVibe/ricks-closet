@@ -10,6 +10,7 @@ import BagDrawer from "../rack/BagDrawer";
 import RoomNav from "../rack/RoomNav";
 import RackLoading from "../rack/RackLoading";
 import { mark, SceneTiming, TimingProbe } from "../rack/timing";
+import { DPR } from "../rack/device";
 import Sign from "../rack/Sign";
 import {
   BACKGROUND,
@@ -175,7 +176,7 @@ export default function ShoeScene() {
         className={`absolute inset-0 touch-none select-none ${mode === "closed" ? "" : "pointer-events-none"}`}
       >
         <Canvas
-          dpr={[1, 2]}
+          dpr={DPR}
           style={{ pointerEvents: mode === "closed" ? "auto" : "none" }}
           camera={{ fov: CAMERA_FOV, position: [0, 1, 3] }}
           onCreated={({ gl }) => {
