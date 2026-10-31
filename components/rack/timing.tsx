@@ -2,8 +2,8 @@ import { useEffect, useLayoutEffect, useRef, useSyncExternalStore } from "react"
 import { useFrame } from "@react-three/fiber";
 
 const params = typeof window === "undefined" ? null : new URLSearchParams(window.location.search);
-export const TIMING = params?.has("timing") ?? false;
 export const NO_SHADOWS = params?.has("noshadows") ?? false;
+export const TIMING = NO_SHADOWS || (params?.has("timing") ?? false);
 export const SHADOWS = NO_SHADOWS ? false : "percentage";
 
 type Mark = { label: string; at: number; note: string };
