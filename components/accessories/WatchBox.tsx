@@ -63,11 +63,12 @@ function standUp(shape: Shape, height: number, bevel = 0.003) {
 type WatchBoxProps = {
   layout: BoxLayout;
   view: WatchView;
+  images?: string[];
   onSelect: (index: number) => void;
   onHover: (index: number) => void;
 };
 
-export default function WatchBox({ layout, view, onSelect, onHover }: WatchBoxProps) {
+export default function WatchBox({ layout, view, images, onSelect, onHover }: WatchBoxProps) {
   const { width, depth } = boxSize(layout);
 
   const materials = useMemo(() => {
@@ -181,6 +182,7 @@ export default function WatchBox({ layout, view, onSelect, onHover }: WatchBoxPr
         <WatchOnCushion
           key={watch.id}
           watch={watch}
+          image={images?.[i] ?? watch.image}
           index={i}
           x={geometries.slots[i].x}
           z={geometries.slots[i].z}

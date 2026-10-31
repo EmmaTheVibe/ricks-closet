@@ -48,6 +48,8 @@ import {
   HANG_LAYER,
   HANG_SPACING,
   HOME_SHOE,
+  HOME_SIDES,
+  HOME_WATCHES,
   INNER_BOTTOM,
   INNER_HALF_WIDTH,
   INNER_TOP,
@@ -147,7 +149,7 @@ function Hotspot({ room, enabled, onHover, onGo, children }: HotspotProps) {
 function ClosetRail() {
   const gl = useThree((s) => s.gl);
   const textures = useTexture(
-    SIDE_SHIRTS.map((s) => s.side!),
+    HOME_SIDES,
     (loaded: Texture | Texture[]) => {
       for (const t of [loaded].flat()) {
         t.colorSpace = SRGBColorSpace;
@@ -431,7 +433,7 @@ export default function Wardrobe({ clock, enabled, onHover, onGo }: WardrobeProp
           <mesh geometry={wedge} material={materials.innerAcross} />
           <group rotation={[TILT, 0, 0]}>
             <group position={[0, 0, -BOX_DEPTH / 2]}>
-              <WatchBox layout={LAYOUTS.wide} view={watchView} onSelect={goIfEnabled("watches")} onHover={() => {}} />
+              <WatchBox layout={LAYOUTS.wide} view={watchView} images={HOME_WATCHES} onSelect={goIfEnabled("watches")} onHover={() => {}} />
             </group>
           </group>
         </group>

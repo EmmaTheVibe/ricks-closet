@@ -35,6 +35,7 @@ function wrap(along: number, top: number, radius: number, side = Infinity) {
 
 type WatchOnCushionProps = {
   watch: WatchConfig;
+  image: string;
   index: number;
   x: number;
   z: number;
@@ -43,9 +44,9 @@ type WatchOnCushionProps = {
   onHover: (over: boolean) => void;
 };
 
-export default function WatchOnCushion({ watch, index, x, z, view, onSelect, onHover }: WatchOnCushionProps) {
+export default function WatchOnCushion({ watch, image, index, x, z, view, onSelect, onHover }: WatchOnCushionProps) {
   const gl = useThree((s) => s.gl);
-  const texture = useTexture(watch.image, (t: Texture) => {
+  const texture = useTexture(image, (t: Texture) => {
     t.colorSpace = SRGBColorSpace;
   });
   const { width: imageWidth, height: imageHeight } = texture.image as HTMLImageElement;

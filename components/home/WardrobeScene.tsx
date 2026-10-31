@@ -23,6 +23,7 @@ import {
   EYE_Y,
   FADE_TIME,
   HOME_SHOE,
+  HOME_WATCHES,
   INTRO_END,
   PLANT_EDGE,
   PLANT_HEIGHT,
@@ -45,10 +46,9 @@ import FloorCutout from "./FloorCutout";
 import RingLight from "./RingLight";
 import Surroundings from "./Surroundings";
 import Wardrobe, { progress, PUSH_TARGETS } from "./Wardrobe";
-import { WATCHES } from "../accessories/watches";
 import { shelfFiles } from "../rack/preloadScene";
 
-for (const image of [PLANT_IMAGE, ...WATCHES.map((w) => w.image)]) useTexture.preload(image);
+for (const image of [PLANT_IMAGE, ...HOME_WATCHES]) useTexture.preload(image);
 for (const file of shelfFiles([HOME_SHOE])) useGLTF.preload(file, false, true);
 
 type Phase = "closed" | "opening" | "inside";

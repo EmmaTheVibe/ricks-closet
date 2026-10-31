@@ -1,5 +1,5 @@
 import { CanvasTexture, NoColorSpace, RepeatWrapping, SRGBColorSpace } from "three";
-import { drawHanger, drawLockup, pageSans } from "../home/textures";
+import { DETAIL, drawHanger, drawLockup, pageSans } from "../home/textures";
 
 function random(seed: number) {
   let s = seed;
@@ -60,9 +60,10 @@ export function createMarble(base: string, aspect: number) {
   const height = 1024;
   const width = Math.round(height * aspect);
   const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
+  canvas.width = Math.round(width * DETAIL);
+  canvas.height = height * DETAIL;
   const ctx = canvas.getContext("2d")!;
+  ctx.scale(DETAIL, DETAIL);
   ctx.fillStyle = base;
   ctx.fillRect(0, 0, width, height);
   const rand = random(19);
@@ -131,9 +132,10 @@ export function createLidLining(width: number, depth: number, suede: string) {
   const W = 1400;
   const H = Math.round((W * depth) / width);
   const canvas = document.createElement("canvas");
-  canvas.width = W;
-  canvas.height = H;
+  canvas.width = W * DETAIL;
+  canvas.height = Math.round(H * DETAIL);
   const ctx = canvas.getContext("2d")!;
+  ctx.scale(DETAIL, DETAIL);
   const rand = random(29);
   ctx.fillStyle = suede;
   ctx.fillRect(0, 0, W, H);

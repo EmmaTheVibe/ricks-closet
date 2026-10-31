@@ -1,6 +1,8 @@
 import { CanvasTexture, NoColorSpace, RepeatWrapping, SRGBColorSpace } from "three";
 
 const SIZE = { width: 1024, height: 2048 };
+export const DETAIL =
+  typeof window !== "undefined" && window.matchMedia("(pointer: coarse) and (max-width: 1024px)").matches ? 0.5 : 1;
 export const BOARDS_ACROSS = 8;
 const SEAM = 3;
 
@@ -30,9 +32,10 @@ export function createFloorBoards(anisotropy: number, base: string) {
   const { width, height } = SIZE;
   const canvas = (fill: string) => {
     const c = document.createElement("canvas");
-    c.width = width;
-    c.height = height;
+    c.width = width * DETAIL;
+    c.height = height * DETAIL;
     const ctx = c.getContext("2d")!;
+    ctx.scale(DETAIL, DETAIL);
     ctx.fillStyle = fill;
     ctx.fillRect(0, 0, width, height);
     return { canvas: c, ctx };

@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useSyncExternalStore } from "react";
 import { useFrame } from "@react-three/fiber";
+import { Texture, type Material, type Mesh, type Object3D, type WebGLRenderer } from "three";
 
 const params = typeof window === "undefined" ? null : new URLSearchParams(window.location.search);
 export const NO_SHADOWS = params?.has("noshadows") ?? false;
@@ -61,6 +62,34 @@ function downloads() {
   return { last, note: `${files.length} files, ${mb(size)} MB, ${mb(sent)} MB over network` };
 }
 
+function describe(texture: Texture) {
+  const source = texture.image as { width?: number; height?: number; src?: string } | null;
+  const size = `${source?.width ?? 0}×${source?.height ?? 0}`;
+  if (source instanceof HTMLImageElement) return `${source.src.split("/").pop()} ${size}`;
+  if (source instanceof HTMLCanvasElement) return `drawn ${size}`;
+  return `${texture.name || "model"} ${size}`;
+}
+
+function uploadAll(gl: WebGLRenderer, scene: Object3D) {
+  const textures = new Set<Texture>();
+  scene.traverse((object) => {
+    const material = (object as Mesh).material as Material | Material[] | undefined;
+    for (const m of Array.isArray(material) ? material : material ? [material] : [])
+      for (const value of Object.values(m)) if (value instanceof Texture) textures.add(value);
+  });
+  const start = performance.now();
+  const uploads = [...textures].map((texture) => {
+    const begin = performance.now();
+    gl.initTexture(texture);
+    return { texture, ms: performance.now() - begin };
+  });
+  push("textures uploaded", start, `${Math.round(performance.now() - start)} ms, ${textures.size} textures`);
+  uploads
+    .sort((a, b) => b.ms - a.ms)
+    .slice(0, 5)
+    .forEach(({ texture, ms }, i) => push(`  slowest ${i + 1}`, start, `${describe(texture)} · ${Math.round(ms)} ms`));
+}
+
 const subscribe = (listener: () => void) => {
   listeners.add(listener);
   return () => {
@@ -85,8 +114,10 @@ export function TimingProbe() {
     const now = performance.now();
     f.count++;
     if (f.count === 1) {
+      uploadAll(gl, scene);
+      const compileStart = performance.now();
       gl.compile(scene, camera);
-      push("shaders built", now, `${Math.round(performance.now() - now)} ms, ${gl.info.programs?.length ?? 0} shaders`);
+      push("shaders built", compileStart, `${Math.round(performance.now() - compileStart)} ms, ${gl.info.programs?.length ?? 0} shaders`);
     } else if (f.count === 2) {
       f.first = now;
       mark(

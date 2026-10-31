@@ -1,3 +1,4 @@
+import { WATCHES } from "../accessories/watches";
 import { SHIRTS } from "../rack/shirts";
 import { SHOES } from "../shoes/shoes";
 
@@ -49,6 +50,9 @@ export const STEP_TOP = 0.68;
 export const SHOE_ID = "air-jordan-1-mid";
 export const HOME_SHOE = SHOES.find((s) => s.id === SHOE_ID) ?? SHOES[0];
 export const SIDE_SHIRTS = SHIRTS.filter((s) => s.side && (s.kind ?? "shirt") === "shirt");
+const homeCopy = (src: string) => `/home${src}`;
+export const HOME_SIDES = SIDE_SHIRTS.map((s) => homeCopy(s.side!));
+export const HOME_WATCHES = WATCHES.map((w) => homeCopy(w.image));
 export const SHOE_TURN_DEG = 20;
 export const SHOE_Z = -0.25;
 
