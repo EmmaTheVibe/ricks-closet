@@ -79,12 +79,15 @@ export function TimingProbe() {
     mark("assets ready");
   }, []);
 
-  useFrame(({ gl }) => {
+  useFrame(({ gl, scene, camera }) => {
     if (!TIMING) return;
     const f = frames.current;
     const now = performance.now();
     f.count++;
-    if (f.count === 2) {
+    if (f.count === 1) {
+      gl.compile(scene, camera);
+      push("shaders built", now, `${Math.round(performance.now() - now)} ms, ${gl.info.programs?.length ?? 0} shaders`);
+    } else if (f.count === 2) {
       f.first = now;
       mark(
         "first frame drawn",
