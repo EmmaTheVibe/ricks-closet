@@ -5,7 +5,7 @@ import {
   RGBADepthPacking,
   type Group,
   type Mesh,
-  type MeshStandardMaterial,
+  type MeshPhysicalMaterial,
   type Texture,
 } from "three";
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
@@ -32,8 +32,8 @@ export default function Shirt({ ref, surface, texture, weave, fades, index, cros
   useEffect(() => () => depthMaterial.dispose(), [depthMaterial]);
 
   const group = useRef<Group>(null);
-  const frontMaterial = useRef<MeshStandardMaterial>(null);
-  const backMaterial = useRef<MeshStandardMaterial>(null);
+  const frontMaterial = useRef<MeshPhysicalMaterial>(null);
+  const backMaterial = useRef<MeshPhysicalMaterial>(null);
   useFrame(() => {
     const opacity = fades.current[index] ?? 1;
     if (group.current) group.current.visible = opacity > 0.001;
@@ -54,35 +54,25 @@ export default function Shirt({ ref, surface, texture, weave, fades, index, cros
     onSelect();
   };
 
-  const material = (behind: boolean) => {
-    const target = behind ? backMaterial : frontMaterial;
-    const shared = {
-      transparent: crossfades,
-      map: texture,
-      alphaTest: 0.5,
-      side: DoubleSide,
-      roughness: 0.85,
-      polygonOffset: behind,
-      polygonOffsetFactor: behind ? 1 : 0,
-      polygonOffsetUnits: behind ? 4 : 0,
-    };
-    return LOW_MEMORY ? (
-      <meshStandardMaterial ref={target} {...shared} />
-    ) : (
-      <meshPhysicalMaterial
-        ref={(m) => {
-          target.current = m;
-        }}
-        {...shared}
-        specularIntensity={FABRIC_SPECULAR}
-        sheen={FABRIC_SHEEN}
-        sheenRoughness={0.8}
-        sheenColor="#ffffff"
-        bumpMap={weave}
-        bumpScale={WEAVE_BUMP}
-      />
-    );
-  };
+  const material = (behind: boolean) => (
+    <meshPhysicalMaterial
+      ref={behind ? backMaterial : frontMaterial}
+      transparent={crossfades}
+      map={texture}
+      alphaTest={0.5}
+      side={DoubleSide}
+      roughness={0.85}
+      specularIntensity={FABRIC_SPECULAR}
+      sheen={LOW_MEMORY ? 0 : FABRIC_SHEEN}
+      sheenRoughness={0.8}
+      sheenColor="#ffffff"
+      bumpMap={LOW_MEMORY ? null : weave}
+      bumpScale={WEAVE_BUMP}
+      polygonOffset={behind}
+      polygonOffsetFactor={behind ? 1 : 0}
+      polygonOffsetUnits={behind ? 4 : 0}
+    />
+  );
 
   return (
     <group ref={group}>

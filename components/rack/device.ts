@@ -1,4 +1,4 @@
-import { MeshPhysicalMaterial, MeshStandardMaterial, type MeshPhysicalMaterialParameters } from "three";
+import { MeshPhysicalMaterial, type MeshPhysicalMaterialParameters } from "three";
 
 const memory =
   typeof navigator === "undefined" ? undefined : (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
@@ -11,9 +11,10 @@ export function flat<T extends object>(params: T): T {
   return LOW_MEMORY ? (Object.fromEntries(Object.entries(params).filter(([key]) => !BUMP.has(key))) as T) : params;
 }
 
-export function physicalMaterial(params: MeshPhysicalMaterialParameters): MeshStandardMaterial {
-  if (!LOW_MEMORY) return new MeshPhysicalMaterial(params);
-  const material = new MeshStandardMaterial();
-  material.setValues(Object.fromEntries(Object.entries(flat(params)).filter(([key]) => key in material)));
-  return material;
+const EXTRAS = /^(clearcoat|sheen)/;
+
+export function physicalMaterial(params: MeshPhysicalMaterialParameters) {
+  return new MeshPhysicalMaterial(
+    LOW_MEMORY ? Object.fromEntries(Object.entries(flat(params)).filter(([key]) => !EXTRAS.test(key))) : params,
+  );
 }
