@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Environment } from "@react-three/drei";
+import { Environment, useGLTF } from "@react-three/drei";
 import { MathUtils, NeutralToneMapping, type Group, type PerspectiveCamera } from "three";
 import { useBag } from "../rack/bag";
 import BagButton from "../rack/BagButton";
@@ -27,6 +27,9 @@ import { SHOES } from "./shoes";
 import { ShoeView, SOLO_LAYER } from "./shoeView";
 import ShoeWall, { WALL_SLOTS } from "./ShoeWall";
 import { useWallScroll, type WallScroll } from "./useWallScroll";
+import { shelfFiles } from "../rack/preloadScene";
+
+for (const file of shelfFiles(SHOES)) useGLTF.preload(file, false, true);
 
 const FLOOR_MARGIN = 0.3;
 const SIDE_MARGIN = 0.12;

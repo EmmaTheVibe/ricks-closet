@@ -4,7 +4,7 @@ import { Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState, ty
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Environment } from "@react-three/drei";
+import { Environment, useGLTF, useTexture } from "@react-three/drei";
 import { MathUtils, NeutralToneMapping, Vector3, type PerspectiveCamera } from "three";
 import { HoverIcon, ROOM_ICONS, SPRING } from "../ui/hover";
 import RackLoading from "../rack/RackLoading";
@@ -22,6 +22,7 @@ import {
   END_FIT,
   EYE_Y,
   FADE_TIME,
+  HOME_SHOE,
   INTRO_END,
   PLANT_EDGE,
   PLANT_HEIGHT,
@@ -44,6 +45,11 @@ import FloorCutout from "./FloorCutout";
 import RingLight from "./RingLight";
 import Surroundings from "./Surroundings";
 import Wardrobe, { progress, PUSH_TARGETS } from "./Wardrobe";
+import { WATCHES } from "../accessories/watches";
+import { shelfFiles } from "../rack/preloadScene";
+
+for (const image of [PLANT_IMAGE, ...WATCHES.map((w) => w.image)]) useTexture.preload(image);
+for (const file of shelfFiles([HOME_SHOE])) useGLTF.preload(file, false, true);
 
 type Phase = "closed" | "opening" | "inside";
 

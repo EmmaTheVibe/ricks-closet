@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useRef, useState, type PointerEvent } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Environment } from "@react-three/drei";
+import { Environment, useTexture } from "@react-three/drei";
 import { MathUtils, NeutralToneMapping, Vector3, type PerspectiveCamera } from "three";
 import { useBag } from "../rack/bag";
 import BagButton from "../rack/BagButton";
@@ -18,6 +18,8 @@ import WatchBox from "./WatchBox";
 import WatchModal from "./WatchModal";
 import { WatchView } from "./watchView";
 import { WATCHES } from "./watches";
+
+for (const watch of WATCHES) useTexture.preload(watch.image);
 
 const CAMERA_FOV = 24;
 const TILT_DEG = 38;
