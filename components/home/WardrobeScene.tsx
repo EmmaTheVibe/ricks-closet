@@ -8,6 +8,7 @@ import { Environment } from "@react-three/drei";
 import { MathUtils, NeutralToneMapping, Vector3, type PerspectiveCamera } from "three";
 import { HoverIcon, ROOM_ICONS, SPRING } from "../ui/hover";
 import RackLoading from "../rack/RackLoading";
+import { mark, SceneTiming, TimingProbe } from "../rack/timing";
 import {
   BACKGROUND,
   CAMERA_FOV,
@@ -144,7 +145,10 @@ export default function WardrobeScene({ fallback }: { fallback: ReactNode }) {
     if (next === "inside") introPlayed = true;
   }, []);
   const [ready, setReady] = useState(false);
-  const markReady = useCallback(() => setReady(true), []);
+  const markReady = useCallback(() => {
+    mark("curtain opens");
+    setReady(true);
+  }, []);
 
   const router = useRouter();
   useEffect(() => {
@@ -188,11 +192,13 @@ export default function WardrobeScene({ fallback }: { fallback: ReactNode }) {
 
   return (
     <main className="relative h-dvh w-full overflow-hidden" style={{ background: BACKGROUND }} onPointerMove={movePill}>
+      <SceneTiming />
       <div className="absolute inset-0 select-none">
         <Canvas
           dpr={[1, 2]}
           camera={{ fov: CAMERA_FOV, position: [0, EYE_Y, 6] }}
           onCreated={({ gl }) => {
+            mark("webgl ready");
             gl.toneMapping = NeutralToneMapping;
             gl.domElement.setAttribute("role", "img");
             gl.domElement.setAttribute("aria-label", "Rick’s wardrobe, its doors opening onto clothes, shoes and watches");
@@ -222,6 +228,7 @@ export default function WardrobeScene({ fallback }: { fallback: ReactNode }) {
               shadowOpacity={0.3}
             />
             <RingLight x={RING_LIGHT_X} z={RING_LIGHT_Z} wallZ={WALL_Z} turnDeg={RING_LIGHT_TURN_DEG} />
+            <TimingProbe />
             <SceneReady onReady={markReady} />
           </Suspense>
 

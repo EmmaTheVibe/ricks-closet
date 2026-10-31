@@ -18,6 +18,7 @@ import RackSounds from "./RackSounds";
 import { useRackSound } from "./rackSound";
 import RoomNav from "./RoomNav";
 import SoundToggle from "./SoundToggle";
+import { mark, SceneTiming, SHADOWS, TimingProbe } from "./timing";
 import { INITIAL_INDEX, SHIRTS } from "./shirts";
 import { useRackControls } from "./useRackControls";
 import { ShirtInteraction, usePointerTracking } from "./interaction";
@@ -93,7 +94,10 @@ export default function RackScene() {
     pullOff.putBack();
   };
   const [ready, setReady] = useState(false);
-  const markReady = useCallback(() => setReady(true), []);
+  const markReady = useCallback(() => {
+    mark("curtain opens");
+    setReady(true);
+  }, []);
 
   const [onScreen, setOnScreen] = useState(true);
   useEffect(() => {
@@ -108,6 +112,7 @@ export default function RackScene() {
 
   return (
     <div className="relative h-full w-full">
+      <SceneTiming />
       <canvas
         ref={(el) => pullOff.setSnapshot(el)}
         aria-hidden
@@ -128,12 +133,13 @@ export default function RackScene() {
         className={`absolute inset-0 touch-none select-none ${view === "closed" ? "" : "pointer-events-none"}`}
       >
         <Canvas
-          shadows="percentage"
+          shadows={SHADOWS}
           dpr={[1, 2]}
           frameloop={onScreen ? "always" : "never"}
           style={{ pointerEvents: view === "closed" ? "auto" : "none" }}
           camera={{ fov: CAMERA_FOV, position: CAMERA_POSITION }}
           onCreated={({ gl }) => {
+            mark("webgl ready");
             gl.toneMapping = NeutralToneMapping;
             gl.domElement.setAttribute("role", "img");
             gl.domElement.setAttribute("aria-label", "Clothes rack");
@@ -163,6 +169,7 @@ export default function RackScene() {
             <Rack controls={controls} interaction={interaction} pullOff={pullOff} />
             <RackSounds controls={controls} sound={sound} />
             <Sign />
+            <TimingProbe />
             <SceneReady onReady={markReady} />
           </Suspense>
 

@@ -9,6 +9,7 @@ import BagButton from "../rack/BagButton";
 import BagDrawer from "../rack/BagDrawer";
 import RoomNav from "../rack/RoomNav";
 import RackLoading from "../rack/RackLoading";
+import { mark, SceneTiming, SHADOWS, TimingProbe } from "../rack/timing";
 import { BACKGROUND, ENV_INTENSITY, ENV_MAP, KEY_LIGHT_COLOR, KEY_LIGHT_INTENSITY } from "../rack/constants";
 import { BOX_HEIGHT, boxSize, LAYOUTS, LID_OPEN_DEG, LID_THICKNESS, SIDEBOARD, SIDEBOARD_WALL_Z, type BoxLayout } from "./constants";
 import Surroundings from "../home/Surroundings";
@@ -127,7 +128,10 @@ function ViewDriver({ view }: { view: WatchView }) {
 export default function AccessoriesScene() {
   const [webgl] = useState(hasWebGL);
   const [ready, setReady] = useState(false);
-  const markReady = useCallback(() => setReady(true), []);
+  const markReady = useCallback(() => {
+    mark("curtain opens");
+    setReady(true);
+  }, []);
   const bag = useBag();
   const [bagOpen, setBagOpen] = useState(false);
   const [mode, setMode] = useState<"closed" | "open" | "returning">("closed");
@@ -171,6 +175,7 @@ export default function AccessoriesScene() {
 
   return (
     <div className="relative h-full w-full" onPointerMove={movePill}>
+      <SceneTiming />
       <canvas
         ref={(el) => view.setSnapshot(el)}
         aria-hidden
@@ -188,11 +193,12 @@ export default function AccessoriesScene() {
 
       <div className={`absolute inset-0 select-none ${mode === "closed" ? "" : "pointer-events-none"}`}>
         <Canvas
-          shadows="percentage"
+          shadows={SHADOWS}
           dpr={[1, 2]}
           style={{ pointerEvents: mode === "closed" ? "auto" : "none" }}
           camera={{ fov: CAMERA_FOV, position: [0, 1, 0] }}
           onCreated={({ gl }) => {
+            mark("webgl ready");
             gl.toneMapping = NeutralToneMapping;
             gl.domElement.setAttribute("role", "img");
             gl.domElement.setAttribute("aria-label", "Watch box");
@@ -223,6 +229,7 @@ export default function AccessoriesScene() {
             <Environment files={ENV_MAP} environmentIntensity={ENV_INTENSITY} />
             <Room view={view} onSelect={openView} onHover={hover} />
             <ViewDriver view={view} />
+            <TimingProbe />
             <SceneReady onReady={markReady} />
           </Suspense>
         </Canvas>

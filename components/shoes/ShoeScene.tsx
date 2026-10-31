@@ -9,6 +9,7 @@ import BagButton from "../rack/BagButton";
 import BagDrawer from "../rack/BagDrawer";
 import RoomNav from "../rack/RoomNav";
 import RackLoading from "../rack/RackLoading";
+import { mark, SceneTiming, TimingProbe } from "../rack/timing";
 import Sign from "../rack/Sign";
 import {
   BACKGROUND,
@@ -98,7 +99,10 @@ export default function ShoeScene() {
   const area = useRef<HTMLDivElement>(null);
   const scroll = useWallScroll(area);
   const [ready, setReady] = useState(false);
-  const markReady = useCallback(() => setReady(true), []);
+  const markReady = useCallback(() => {
+    mark("curtain opens");
+    setReady(true);
+  }, []);
   const bag = useBag();
   const [bagOpen, setBagOpen] = useState(false);
   const [mode, setMode] = useState<"closed" | "open" | "returning">("closed");
@@ -147,6 +151,7 @@ export default function ShoeScene() {
 
   return (
     <div className="relative h-full w-full" onPointerMove={movePill}>
+      <SceneTiming />
       <canvas
         ref={(el) => view.setSnapshot(el)}
         aria-hidden
@@ -171,6 +176,7 @@ export default function ShoeScene() {
           style={{ pointerEvents: mode === "closed" ? "auto" : "none" }}
           camera={{ fov: CAMERA_FOV, position: [0, 1, 3] }}
           onCreated={({ gl }) => {
+            mark("webgl ready");
             gl.toneMapping = NeutralToneMapping;
             gl.domElement.setAttribute("role", "img");
             gl.domElement.setAttribute("aria-label", "Shoe wall");
@@ -196,6 +202,7 @@ export default function ShoeScene() {
             <ShoeWall view={view} viewing={viewing} onSelect={openView} onHover={hover} />
             <SignHanger scroll={scroll} />
             <ViewDriver view={view} />
+            <TimingProbe />
             <SceneReady onReady={markReady} />
           </Suspense>
 
