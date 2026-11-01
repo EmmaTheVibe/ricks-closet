@@ -22,25 +22,21 @@ const stroke = { fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeL
 export const ICONS = {
   hanger: (
     <svg viewBox="0 0 24 24" className="size-4" aria-hidden {...stroke}>
-      <g transform="translate(0 2)">
-        <path d="M10.4 6.2a1.6 1.6 0 1 1 1.6 1.6v1.4" />
-        <path d="M12 9.2 3.5 15.5h17z" />
-      </g>
+      <path d="M9.6 5.4a2.4 2.4 0 1 1 2.4 2.4v2.8" />
+      <path d="M12 10.6 2.5 18.5h19z" fill="currentColor" fillOpacity={0.16} />
     </svg>
   ),
   shoe: (
     <svg viewBox="0 0 24 24" className="size-4" aria-hidden {...stroke}>
-      <g transform="translate(0 -1.5)">
-        <path d="M3 15.5V9.5h4.5l2.5 3 4 1.2c3.5.9 7 1.6 7 3.3v.5H3z" />
-        <path d="M9.5 12.5 8 14M12 13.2l-1 1.4" />
-      </g>
+      <path d="M2.5 18.5V7H8l2.5 4 4.5 1.6c4 1.3 6.5 2.4 6.5 4.6v1.3z" fill="currentColor" fillOpacity={0.16} />
+      <path d="M2.5 15.5h18.3M10.5 11l-1.6 2M13.5 12.2l-1.4 2" />
     </svg>
   ),
   watch: (
     <svg viewBox="0 0 24 24" className="size-4" aria-hidden {...stroke}>
-      <path d="M9 3.5h6l.5 3.5h-7zM9 20.5h6l.5-3.5h-7z" />
-      <circle cx="12" cy="12" r="5" />
-      <path d="M12 9.5V12l1.6 1.2" />
+      <path d="M8.5 2.5h7l.7 4.2H7.8zM8.5 21.5h7l.7-4.2H7.8z" />
+      <circle cx="12" cy="12" r="6" fill="currentColor" fillOpacity={0.16} />
+      <path d="M12 8.8V12l2 1.5M18.2 12h1.3" />
     </svg>
   ),
   eye: (

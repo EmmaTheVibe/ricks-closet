@@ -17,6 +17,7 @@ import RackLoading from "./RackLoading";
 import RackSounds from "./RackSounds";
 import { useRackSound } from "./rackSound";
 import RoomNav from "./RoomNav";
+import { RoomPan } from "./roomPan";
 import SoundToggle from "./SoundToggle";
 import { mark, SceneTiming, SHADOWS, TimingProbe } from "./timing";
 import { DPR } from "./device";
@@ -149,6 +150,7 @@ export default function RackScene() {
           <color attach="background" args={[BACKGROUND]} />
           <fog attach="fog" args={[BACKGROUND, 5, 11]} />
           <CameraRig />
+          <RoomPan room="clothes" ready={ready} />
 
           <directionalLight
             position={[-2.5, 4, 3]}

@@ -8,6 +8,7 @@ import { useBag } from "../rack/bag";
 import BagButton from "../rack/BagButton";
 import BagDrawer from "../rack/BagDrawer";
 import RoomNav from "../rack/RoomNav";
+import { RoomPan } from "../rack/roomPan";
 import RackLoading from "../rack/RackLoading";
 import { mark, SceneTiming, SHADOWS, TimingMark, TimingProbe } from "../rack/timing";
 import { DPR } from "../rack/device";
@@ -232,6 +233,7 @@ export default function AccessoriesScene() {
             <TimingMark />
             <Environment files={ENV_MAP} environmentIntensity={ENV_INTENSITY} />
             <Room view={view} onSelect={openView} onHover={hover} />
+            <RoomPan room="watches" ready={ready} />
             <ViewDriver view={view} />
             <TimingProbe />
             <SceneReady onReady={markReady} />

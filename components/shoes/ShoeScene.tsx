@@ -8,6 +8,7 @@ import { useBag } from "../rack/bag";
 import BagButton from "../rack/BagButton";
 import BagDrawer from "../rack/BagDrawer";
 import RoomNav from "../rack/RoomNav";
+import { RoomPan } from "../rack/roomPan";
 import RackLoading from "../rack/RackLoading";
 import { mark, SceneTiming, TimingProbe } from "../rack/timing";
 import { DPR } from "../rack/device";
@@ -193,6 +194,7 @@ export default function ShoeScene() {
             decor={{ clear: caseWidth() / 2 + 0.19, sconcePanel: 0 }}
           />
           <CameraRig scroll={scroll} />
+          <RoomPan room="shoes" ready={ready} />
 
           <directionalLight
             position={[-2.5, 4, 3]}

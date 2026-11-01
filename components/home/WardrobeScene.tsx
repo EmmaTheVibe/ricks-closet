@@ -10,6 +10,7 @@ import { HoverIcon, ROOM_ICONS, SPRING } from "../ui/hover";
 import RackLoading from "../rack/RackLoading";
 import { mark, SceneTiming, TimingMark, TimingProbe } from "../rack/timing";
 import { DPR } from "../rack/device";
+import { arriveFromHome } from "../rack/roomPan";
 import {
   BACKGROUND,
   CAMERA_FOV,
@@ -216,7 +217,11 @@ export default function WardrobeScene({ fallback }: { fallback: ReactNode }) {
             clock={clock}
             push={pushing}
             onFade={() => setFading(true)}
-            onArrive={() => pushing && router.push(ROOMS[pushing].href)}
+            onArrive={() => {
+              if (!pushing) return;
+              arriveFromHome(pushing);
+              router.push(ROOMS[pushing].href);
+            }}
           />
           <IntroClock clockRef={clock} running={ready} onPhase={changePhase} />
 
