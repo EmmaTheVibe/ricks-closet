@@ -3,9 +3,8 @@ import { useFrame } from "@react-three/fiber";
 import { Texture, type Material, type Mesh, type Object3D, type WebGLRenderer } from "three";
 import { LOW_MEMORY } from "./device";
 
-const params = typeof window === "undefined" ? null : new URLSearchParams(window.location.search);
-export const NO_SHADOWS = params?.has("noshadows") ?? false;
-export const TIMING = NO_SHADOWS || (params?.has("timing") ?? false);
+export const NO_SHADOWS = false;
+export const TIMING = false;
 export const SHADOWS = NO_SHADOWS ? false : "percentage";
 
 type Mark = { label: string; at: number; note: string };
